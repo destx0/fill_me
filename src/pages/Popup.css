@@ -88,3 +88,13 @@ code {
     color: #666;
     margin-top: 10px;
 }
+
+.success-message {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.source-url {
+    font-size: 12px;
+    color: #666;
+}

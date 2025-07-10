@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Test Page</title>
+    <title>Form Test Page - Enhanced</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,7 +65,7 @@
             <input type="tel" placeholder="Enter phone number">
             
             <label>Date of Birth:</label>
-            <input type="date">
+            <input type="date" name="dob">
         </div>
         
         <div class="form-section">
@@ -77,11 +77,11 @@
             <input type="text" placeholder="Enter city">
             
             <label>State:</label>
-            <select>
+            <select name="state">
                 <option>Select State</option>
-                <option>CA</option>
-                <option>NY</option>
-                <option>TX</option>
+                <option value="CA">California</option>
+                <option value="NY">New York</option>
+                <option value="TX">Texas</option>
             </select>
             
             <label>ZIP Code:</label>
@@ -126,7 +126,10 @@
     </div>
     
     <script>
-        console.log('Test page loaded with', document.querySelectorAll('input').length, 'input elements');
+        console.log('Test page loaded with', document.querySelectorAll('input, select, textarea').length, 'form elements');
+        console.log('Input elements:', document.querySelectorAll('input').length);
+        console.log('Select elements:', document.querySelectorAll('select').length);
+        console.log('Textarea elements:', document.querySelectorAll('textarea').length);
     </script>
 </body>
 </html>

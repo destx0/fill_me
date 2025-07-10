@@ -9,6 +9,8 @@ interface AnalysisResult {
 	depth: number;
 	inputCount: number;
 	totalInputs: number;
+	htmlSaved?: boolean;
+	url?: string;
 }
 
 export default function () {
@@ -50,7 +52,7 @@ export default function () {
 		} catch (err) {
 			console.error("Analysis failed:", err);
 			setError(
-				"Failed to analyze page. Make sure you're on a page with form inputs."
+				"Failed to analyze page. Make sure you're on a page with form elements."
 			);
 		} finally {
 			setIsAnalyzing(false);
@@ -59,10 +61,6 @@ export default function () {
 
 	return (
 		<div>
-			<img src="/icon-with-shadow.svg" alt="Form Bot Extension Icon" />
-			<h1>Form Bot</h1>
-			<p>Find the deepest element containing ≥90% of form inputs</p>
-
 			<button
 				onClick={analyzeCurrentPage}
 				disabled={isAnalyzing}
@@ -94,14 +92,27 @@ export default function () {
 					</p>
 					<p>
 						<strong>Contains:</strong> {result.inputCount} of{" "}
-						{result.totalInputs} inputs (
+						{result.totalInputs} form elements (
 						{Math.round(
 							(result.inputCount / result.totalInputs) * 100
 						)}
 						%)
 					</p>
+					{result.htmlSaved && (
+						<p className="success-message">
+							✅ Cleaned HTML saved to downloads
+						</p>
+					)}
+					{result.url && (
+						<p className="source-url">
+							<strong>Source:</strong>{" "}
+							{result.url.length > 50
+								? result.url.substring(0, 50) + "..."
+								: result.url}
+						</p>
+					)}
 					<p className="result-note">
-						The element has been highlighted on the page for 3
+						The element has been highlighted on the page for 5
 						seconds.
 					</p>
 				</div>

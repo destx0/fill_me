@@ -1,22 +1,27 @@
 # Form Bot Chrome Extension
 
-A Chrome extension that analyzes web pages to find the deepest DOM element containing ≥90% of all form input elements.
+A Chrome extension that analyzes web pages to find the deepest DOM element containing ≥80% of all form elements (inputs, selects, textareas) and saves a cleaned version of the HTML.
 
 ## Features
 
--   🔍 **Smart Form Detection**: Analyzes the DOM structure to find the most specific container holding the majority of form inputs
--   📊 **Detailed Analysis**: Shows element tag, ID, class, depth, and input count statistics
+-   🔍 **Smart Form Detection**: Analyzes the DOM structure to find the most specific container holding the majority of form elements
+-   📊 **Detailed Analysis**: Shows element tag, ID, class, depth, and form element count statistics
 -   🎯 **Visual Highlighting**: Temporarily highlights the found element on the page
 -   💻 **Developer Console Logging**: Provides detailed console output for debugging
+-   🧹 **HTML Cleaning**: Strips unnecessary attributes (styles, scripts, etc.) from the extracted HTML
+-   💾 **Auto-Save**: Automatically downloads the cleaned HTML structure as a file
+-   🌐 **Real-World Ready**: Optimized for complex websites like job application forms
 
 ## How It Works
 
 The extension walks through all DOM elements and:
 
-1. Counts the total number of `<input>` elements on the page
-2. For each element, counts how many inputs are contained in its subtree
-3. Finds elements that contain ≥90% of all inputs
-4. Returns the deepest (most specific) element that meets the criteria
+1. Counts the total number of form elements (`<input>`, `<select>`, `<textarea>`) on the page
+2. Focuses on likely form containers to improve performance
+3. For each element, counts how many form elements are contained in its subtree
+4. Finds elements that contain ≥80% of all form elements
+5. Returns the deepest (most specific) element that meets the criteria
+6. Strips unnecessary HTML attributes and saves a clean version
 
 ## Installation
 
