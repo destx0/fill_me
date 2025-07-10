@@ -8,6 +8,11 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@genkit-ai/googleai": "^1.14.0",
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.2.0",
+    "firebase": "^11.10.0",
+    "genkit": "^1.14.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

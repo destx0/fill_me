@@ -2,6 +2,21 @@
 
 A Chrome extension that analyzes web pages to find the deepest DOM element containing ≥80% of all form elements (inputs, selects, textareas) and saves a cleaned version of the HTML.
 
+## 🚀 NEW: AI-Powered Form Filling
+
+Now includes **Google Gemini AI integration** for intelligent form filling:
+
+-   🤖 **AI Form Analysis**: Automatically analyzes form structure and generates appropriate data
+-   📝 **Smart Data Generation**: Creates realistic, contextual information for each field type
+-   🌍 **Context-Aware**: Maintains consistency (e.g., matching addresses with country codes)
+-   🔧 **Easy Setup**: Just add your Gemini API key to the `.env` file
+
+### Quick Setup for AI Features:
+
+1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Add to `.env` file: `VITE_GEMINI_API_KEY=your_api_key_here`
+3. Use the "Fill Form (AI)" button in the extension popup!
+
 ## Features
 
 -   🔍 **Smart Form Detection**: Analyzes the DOM structure to find the most specific container holding the majority of form elements

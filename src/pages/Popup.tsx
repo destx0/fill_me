@@ -2,30 +2,63 @@ import { useEffect, useState } from "react";
 import "./Popup.css";
 import browser from "webextension-polyfill";
 
-interface AnalysisResult {
-	tagName: string;
-	id?: string;
-	className?: string;
-	depth: number;
+interface CleanResult {
+	cleanHtml: string;
 	inputCount: number;
-	totalInputs: number;
-	htmlSaved?: boolean;
-	url?: string;
+	url: string;
 }
 
 export default function () {
-	const [isAnalyzing, setIsAnalyzing] = useState(false);
-	const [result, setResult] = useState<AnalysisResult | null>(null);
+	const [isCleaning, setIsCleaning] = useState(false);
+	const [isTestingAI, setIsTestingAI] = useState(false);
+	const [result, setResult] = useState<CleanResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [testResult, setTestResult] = useState<string | null>(null);
 
 	useEffect(() => {
 		console.log("Hello from the popup!");
 	}, []);
 
-	const analyzeCurrentPage = async () => {
-		setIsAnalyzing(true);
+	const cleanFormHtml = async () => {
+		setIsCleaning(true);
 		setError(null);
 		setResult(null);
+
+		try {
+			const [tab] = await browser.tabs.query({
+				active: true,
+				currentWindow: true,
+			});
+
+			if (!tab.id) {
+				throw new Error("No active tab found");
+			}
+
+			const response = await browser.tabs.sendMessage(tab.id, {
+				action: "analyzeForm",
+			});
+
+			if (response) {
+				setResult(response);
+				console.log("✅ [POPUP] Clean form HTML result:", response);
+				console.log("🧹 [POPUP] Cleaned HTML:", response.cleanHtml);
+			} else {
+				setError("No form elements found on this page");
+			}
+		} catch (err) {
+			console.error("Form cleaning failed:", err);
+			setError(
+				"Failed to clean form HTML. Make sure you're on a page with form elements."
+			);
+		} finally {
+			setIsCleaning(false);
+		}
+	};
+
+	const testGeminiAPI = async () => {
+		setIsTestingAI(true);
+		setError(null);
+		setTestResult(null);
 
 		try {
 			// Get the current active tab
@@ -38,83 +71,71 @@ export default function () {
 				throw new Error("No active tab found");
 			}
 
-			// Send message to content script
+			// Send message to content script to test Gemini API
 			const response = await browser.tabs.sendMessage(tab.id, {
-				action: "analyzeForm",
+				action: "testGeminiAPI",
+				message: "hi",
 			});
 
-			if (response) {
-				setResult(response);
-				console.log("Analysis result:", response);
+			if (response && response.success) {
+				setTestResult(response.reply);
+				console.log("Gemini API test successful:", response.reply);
 			} else {
-				setError("No suitable form container found on this page");
+				setError(
+					response?.error ||
+						"Failed to test Gemini API. Check your API key."
+				);
 			}
 		} catch (err) {
-			console.error("Analysis failed:", err);
+			console.error("Gemini API test failed:", err);
 			setError(
-				"Failed to analyze page. Make sure you're on a page with form elements."
+				"Failed to test Gemini API. Make sure you have a valid API key."
 			);
 		} finally {
-			setIsAnalyzing(false);
+			setIsTestingAI(false);
 		}
 	};
 
 	return (
 		<div>
 			<button
-				onClick={analyzeCurrentPage}
-				disabled={isAnalyzing}
+				onClick={cleanFormHtml}
+				disabled={isCleaning}
 				className="analyze-button"
 			>
-				{isAnalyzing ? "Analyzing..." : "Analyze Current Page"}
+				{isCleaning ? "Cleaning..." : "Clean Form HTML"}
+			</button>
+
+			<button
+				onClick={testGeminiAPI}
+				disabled={isTestingAI}
+				className="test-button"
+			>
+				{isTestingAI ? "Testing..." : "Test Gemini API"}
 			</button>
 
 			{error && <div className="error-message">{error}</div>}
 
 			{result && (
-				<div className="result-container">
-					<h3>Analysis Result:</h3>
+				<div className="result">
+					<h3>Cleaned Form HTML:</h3>
 					<p>
-						<strong>Element:</strong> &lt;{result.tagName}&gt;
-					</p>
-					{result.id && (
-						<p>
-							<strong>ID:</strong> {result.id}
-						</p>
-					)}
-					{result.className && (
-						<p>
-							<strong>Class:</strong> {result.className}
-						</p>
-					)}
-					<p>
-						<strong>Depth:</strong> {result.depth}
+						<strong>Form elements found:</strong>{" "}
+						{result.inputCount}
 					</p>
 					<p>
-						<strong>Contains:</strong> {result.inputCount} of{" "}
-						{result.totalInputs} form elements (
-						{Math.round(
-							(result.inputCount / result.totalInputs) * 100
-						)}
-						%)
+						<strong>Page URL:</strong> {result.url}
 					</p>
-					{result.htmlSaved && (
-						<p className="success-message">
-							✅ Cleaned HTML saved to downloads
-						</p>
-					)}
-					{result.url && (
-						<p className="source-url">
-							<strong>Source:</strong>{" "}
-							{result.url.length > 50
-								? result.url.substring(0, 50) + "..."
-								: result.url}
-						</p>
-					)}
-					<p className="result-note">
-						The element has been highlighted on the page for 5
-						seconds.
-					</p>
+					<div className="html-output">
+						<pre>{result.cleanHtml}</pre>
+					</div>
+				</div>
+			)}
+
+			{testResult && (
+				<div className="test-result">
+					<h3>Gemini API Test Result:</h3>
+					<p>{testResult}</p>
 				</div>
 			)}
 		</div>
