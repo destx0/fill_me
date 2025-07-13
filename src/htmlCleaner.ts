@@ -67,6 +67,7 @@ export function selectBestForm(): Element | null {
 
 export function cleanFormHtml(formElement: Element): string {
 	const clonedForm = formElement.cloneNode(true) as Element;
+
 	const formTagsToKeep = new Set([
 		"FORM",
 		"INPUT",
@@ -80,6 +81,8 @@ export function cleanFormHtml(formElement: Element): string {
 		"LEGEND",
 		"DATALIST",
 	]);
+
+	// ↑ ADDED "class" and "tabindex" here ↓
 	const attributesToKeep = new Set([
 		"name",
 		"id",
@@ -113,65 +116,69 @@ export function cleanFormHtml(formElement: Element): string {
 		"data-test",
 		"data-label",
 		"data-name",
+		// newly added:
+		"class",
+		"tabindex",
 	]);
 
 	const allDescendants = clonedForm.querySelectorAll("*");
 	for (let i = allDescendants.length - 1; i >= 0; i--) {
 		const el = allDescendants[i];
 
-		// Remove script, style, and hidden forms
+		// strip out scripts/styles
 		if (el.tagName === "SCRIPT" || el.tagName === "STYLE") {
 			el.remove();
 			continue;
 		}
 
-		// Remove hidden forms (like logout forms)
+		// optional: remove entirely hidden forms
 		if (el.tagName === "FORM") {
-			const formEl = el as HTMLFormElement;
+			const f = el as HTMLFormElement;
 			if (
-				(formEl.style && formEl.style.display === "none") ||
-				formEl.getAttribute("style")?.includes("display: none")
+				f.style.display === "none" ||
+				f.getAttribute("style")?.includes("display: none") ||
+				f.hidden
 			) {
-				console.log(
-					`🔧 [CLEANUP] Removing hidden form: ${
-						formEl.id || "unnamed"
-					}`
-				);
-				el.remove();
+				f.remove();
 				continue;
 			}
 		}
 
+		// remove comment nodes
 		for (let j = el.childNodes.length - 1; j >= 0; j--) {
 			if (el.childNodes[j].nodeType === Node.COMMENT_NODE) {
 				el.childNodes[j].remove();
 			}
 		}
 
-		const attributesToRemove = [];
+		// prune attributes
+		const toRemove: string[] = [];
 		for (let j = 0; j < el.attributes.length; j++) {
-			const attr = el.attributes[j];
-			const attrName = attr.name.toLowerCase();
+			const a = el.attributes[j];
+			const name = a.name.toLowerCase();
 
-			// Skip invalid regex patterns
-			if (attrName === "pattern") {
+			// if it’s the pattern attr, ensure it’s a valid regex
+			if (name === "pattern") {
 				try {
-					new RegExp(attr.value);
-				} catch (e) {
-					console.warn(
-						`🔧 [CLEANUP] Removing invalid pattern: ${attr.value}`
-					);
-					attributesToRemove.push(attr.name);
+					new RegExp(a.value);
+				} catch {
+					toRemove.push(a.name);
 					continue;
 				}
 			}
 
-			if (!attributesToKeep.has(attrName)) {
-				attributesToRemove.push(attr.name);
+			// ONLY keep if it’s in our whitelist OR data-* OR aria-*
+			if (
+				!attributesToKeep.has(name) &&
+				!name.startsWith("data-") &&
+				!name.startsWith("aria-")
+			) {
+				toRemove.push(a.name);
 			}
 		}
-		attributesToRemove.forEach((attrName) => el.removeAttribute(attrName));
+		toRemove.forEach((n) => el.removeAttribute(n));
 
+		// if this tag itself is not one of our FORM tags, unwrap it
 		if (!formTagsToKeep.has(el.tagName)) {
 			while (el.firstChild) {
 				el.parentNode!.insertBefore(el.firstChild, el);
@@ -180,9 +187,10 @@ export function cleanFormHtml(formElement: Element): string {
 		}
 	}
 
-	const finalElements = clonedForm.querySelectorAll("*");
-	for (let i = finalElements.length - 1; i >= 0; i--) {
-		const el = finalElements[i];
+	// remove any empty non-form elements
+	const finalEls = clonedForm.querySelectorAll("*");
+	for (let i = finalEls.length - 1; i >= 0; i--) {
+		const el = finalEls[i];
 		if (
 			!formTagsToKeep.has(el.tagName) &&
 			el.textContent!.trim() === "" &&
@@ -193,7 +201,7 @@ export function cleanFormHtml(formElement: Element): string {
 	}
 
 	return clonedForm.outerHTML
-		.replace(/></g, ">\n<") // Add line breaks between tags
-		.replace(/\s+/g, " ") // Normalize whitespace within content
+		.replace(/></g, ">\n<")
+		.replace(/\s+/g, " ")
 		.trim();
 }

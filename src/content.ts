@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import { cleanFormHtml, selectBestForm } from "./htmlCleaner";
+import { generateFormFillPrompt, PromptVariables } from "./aiPromptTemplate";
 
 // Global variable to store the analyzed form HTML
 let analyzedFormHtml: string | null = null;
@@ -110,24 +111,11 @@ async function askGroqAPI(userDetails?: any): Promise<{
 				? userDetails.personalInfo
 				: `hii`;
 
-		// Create a prompt that asks Gemini to generate JavaScript code to fill the form
-		const prompt = `You are an expert assistant that generates JavaScript code to fill out HTML forms using provided user portfolio information.
-Given an HTML form structure, generate a JavaScript code block that, when executed in a browser, will:
-- Fill ALL input fields (text, email, number, password, date, tel, url), textareas, and select (dropdown) elements with plausible, diverse, and professional data derived from the user's portfolio.
-- For radio buttons: Select the most relevant option based on the portfolio, or choose a plausible default if no match.
-- For checkboxes: Select all that are relevant to the portfolio, or a reasonable subset if no direct match.
-- For dropdowns (select): Choose the option that best matches the portfolio, or a plausible default.
-- For all fields: If portfolio info is missing, fill with realistic, professional data that increases the chance of selection.
-- Target fields using document.querySelector() or document.querySelectorAll() with id or name attributes. Prefer id, then name, then fallback to tag and index.
-- Do NOT include any comments, HTML, Markdown, or extra text. Output ONLY the raw JavaScript code, ready to execute.
-
-USER PORTFOLIO INFORMATION:
-${portfolioInfo}
-
-FORM HTML:
-${analyzedFormHtml}
-
-Generate the JavaScript code now.`;
+		// Generate prompt using the template
+		const prompt = generateFormFillPrompt({
+			userPortfolioInfo: portfolioInfo,
+			formHtml: analyzedFormHtml,
+		});
 
 		console.log("📤 Sending form HTML to Groq for analysis...");
 		const text = await generateAIText(prompt);
