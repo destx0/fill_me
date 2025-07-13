@@ -123,7 +123,13 @@ export default function () {
 
 	return (
 		<div className="popup-container">
-			<h1 className="popup-title">🤖 Form Bot</h1>
+			<div className="popup-header">
+				<img
+					src="/icon/512.png"
+					alt="Form Bot"
+					className="popup-icon"
+				/>
+			</div>
 
 			<textarea
 				className="user-details-input"
