@@ -1,103 +1,67 @@
 # Form Bot Chrome Extension
 
-A Chrome extension that analyzes web pages to find the deepest DOM element containing ≥80% of all form elements (inputs, selects, textareas) and saves a cleaned version of the HTML.
+An AI-powered Chrome extension that automatically fills web forms using intelligent data generation.
 
-## 🚀 NEW: AI-Powered Form Filling
+## 🚀 Features
 
-Now includes **Google Gemini AI integration** for intelligent form filling:
+-   🤖 **AI-Powered Form Filling**: Automatically fills any web form with contextually appropriate data
+-   📝 **Smart Field Detection**: Detects and fills input fields, textareas, dropdowns, checkboxes, and radio buttons
+-   🎯 **On-Demand Filling**: Click the floating icon that appears when you focus on form fields
+-   🌍 **Context-Aware**: Maintains consistency across related fields (location, phone numbers, etc.)
+-   � **Respects Form Constraints**: Skips readonly and disabled fields automatically
 
--   🤖 **AI Form Analysis**: Automatically analyzes form structure and generates appropriate data
--   📝 **Smart Data Generation**: Creates realistic, contextual information for each field type
--   🌍 **Context-Aware**: Maintains consistency (e.g., matching addresses with country codes)
--   🔧 **Easy Setup**: Just add your Gemini API key to the `.env` file
+## 📦 Installation
 
-### Quick Setup for AI Features:
+### For Chrome (Manifest V2 Support Required)
 
-1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Add to `.env` file: `VITE_GEMINI_API_KEY=your_api_key_here`
-3. Use the "Fill Form (AI)" button in the extension popup!
+Since this extension uses Manifest V2, you need to enable legacy extension support in Chrome:
 
-## Features
+1. **Enable Manifest V2 Extensions** (Required for Chrome 127+):
 
--   🔍 **Smart Form Detection**: Analyzes the DOM structure to find the most specific container holding the majority of form elements
--   📊 **Detailed Analysis**: Shows element tag, ID, class, depth, and form element count statistics
--   🎯 **Visual Highlighting**: Temporarily highlights the found element on the page
--   💻 **Developer Console Logging**: Provides detailed console output for debugging
--   🧹 **HTML Cleaning**: Strips unnecessary attributes (styles, scripts, etc.) from the extracted HTML
--   💾 **Auto-Save**: Automatically downloads the cleaned HTML structure as a file
--   🌐 **Real-World Ready**: Optimized for complex websites like job application forms
+    Run this PowerShell command as Administrator:
 
-## How It Works
-
-The extension walks through all DOM elements and:
-
-1. Counts the total number of form elements (`<input>`, `<select>`, `<textarea>`) on the page
-2. Focuses on likely form containers to improve performance
-3. For each element, counts how many form elements are contained in its subtree
-4. Finds elements that contain ≥80% of all form elements
-5. Returns the deepest (most specific) element that meets the criteria
-6. Strips unnecessary HTML attributes and saves a clean version
-
-## Installation
-
-1. Build the extension:
-
-    ```bash
-    pnpm install
-    pnpm build
+    ```powershell
+    Start-Process "chrome.exe" -ArgumentList "--enable-features=ExtensionManifestV2Available"
     ```
 
-2. Load the extension in Chrome:
-    - Open Chrome and navigate to `chrome://extensions/`
-    - Enable "Developer mode" (toggle in top right)
-    - Click "Load unpacked" and select the `dist` folder
+2. **Install the Extension**:
+    - Download the extension ZIP file
+    - Extract the ZIP file to a folder
+    - Open Chrome and go to `chrome://extensions/`
+    - Enable "Developer mode" (toggle in top-right corner)
+    - Click "Load unpacked" and select the extracted folder
+    - The Form Bot icon should appear in your extensions toolbar
 
-## Usage
+### For Firefox
 
-1. Navigate to any webpage with form inputs
-2. Click the Form Bot extension icon in the toolbar
-3. Click "Analyze Current Page" button
-4. View the results in the popup
-5. The target element will be highlighted on the page for 3 seconds
+1. **Install the Extension**:
 
-## Testing
+    - Download the extension ZIP file
+    - Open Firefox and go to `about:debugging`
+    - Click "This Firefox" in the left sidebar
+    - Click "Load Temporary Add-on"
+    - Select the ZIP file (or any file in the extracted folder)
+    - The extension will be loaded temporarily
 
-A test page is included (`test-page.html`) with multiple forms and inputs to test the extension. Open it in your browser and run the analysis.
+    **For Permanent Installation**:
 
-## Files Structure
+    - The extension needs to be signed by Mozilla for permanent installation
+    - Temporary installation is sufficient for testing and personal use
 
--   `src/popup.tsx` - Extension popup UI (React)
--   `src/content.ts` - Content script that analyzes the DOM
--   `src/background.ts` - Background service worker
--   `src/manifest.json` - Extension manifest
--   `test-page.html` - Test page with sample forms
+## 🔧 Setup
 
-## Example Output
+1. **Get AI API Key**:
 
-```
-Element: <div>
-ID: main-form-container
-Class: container form-wrapper
-Depth: 5
-Contains: 18 of 20 inputs (90%)
-```
+    - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+    - Or configure your preferred AI service
 
-The extension will highlight the found element and log detailed information to both the popup and browser console.
+2. **Configure the Extension**:
+    - Click the Form Bot icon in your browser toolbar
+    - Enter your personal details in the text area
+    - The extension will use this information to fill forms contextually
 
-## Technical Details
+## 🔒 Privacy
 
--   Built with React, TypeScript, and Vite
--   Uses the webextension-polyfill for cross-browser compatibility
--   Implements Chrome Extension Manifest V3
--   Content script injection for DOM analysis
--   Message passing between popup and content script
-
-## Development
-
-To run in development mode:
-
-```bash
-pnpm dev
-```
-
-This will start the Vite development server and watch for changes.
+-   Your personal information is stored locally in the extension
+-   Form data is processed through AI services for intelligent filling
+-   No form data is permanently stored or shared
