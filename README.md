@@ -48,18 +48,6 @@ Since this extension uses Manifest V2, you need to enable legacy extension suppo
     - The extension needs to be signed by Mozilla for permanent installation
     - Temporary installation is sufficient for testing and personal use
 
-## 🔧 Setup
-
-1. **Get AI API Key**:
-
-    - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-    - Or configure your preferred AI service
-
-2. **Configure the Extension**:
-    - Click the Form Bot icon in your browser toolbar
-    - Enter your personal details in the text area
-    - The extension will use this information to fill forms contextually
-
 ## 🔒 Privacy
 
 -   Your personal information is stored locally in the extension
