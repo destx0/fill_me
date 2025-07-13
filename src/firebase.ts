@@ -35,7 +35,7 @@ export const groq = createGroq({
 // AI Text Generation function using Groq
 export async function generateAIText(prompt: string): Promise<string> {
 	const { text } = await generateText({
-		model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+		model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
 		prompt: prompt,
 		temperature: 0.7,
 		maxTokens: 4096,
