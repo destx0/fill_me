@@ -1,6 +1,8 @@
 {
-  "{{chrome}}.manifest_version": 3,
-  "{{firefox}}.manifest_version": 2,
+  "manifest_version": 2,
+  "name": "Form Bot",
+  "version": "1.0.0",
+  "description": "AI-powered form filling extension",
   "icons": {
     "16": "icon/16.png",
     "32": "icon/32.png",
@@ -8,21 +10,19 @@
     "96": "icon/96.png",
     "128": "icon/128.png"
   },
-  "{{chrome}}.action": {
-    "default_popup": "src/popup.html"
-  },
-  "{{firefox}}.browser_action": {
+  "browser_action": {
     "default_popup": "src/popup.html"
   },
   "background": {
-    "{{chrome}}.service_worker": "src/background.ts",
-    "{{firefox}}.scripts": [
+    "scripts": [
       "src/background.ts"
-    ]
+    ],
+    "persistent": false
   },
   "permissions": [
     "activeTab",
-    "scripting"
+    "tabs",
+    "<all_urls>"
   ],
   "content_scripts": [
     {
@@ -33,5 +33,6 @@
         "src/content.ts"
       ]
     }
-  ]
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

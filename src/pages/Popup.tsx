@@ -9,20 +9,20 @@ interface CleanResult {
 }
 
 export default function () {
-	const [isCleaning, setIsCleaning] = useState(false);
-	const [isTestingAI, setIsTestingAI] = useState(false);
+	const [isProcessing, setIsProcessing] = useState(false);
 	const [result, setResult] = useState<CleanResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [testResult, setTestResult] = useState<string | null>(null);
+	const [status, setStatus] = useState<string>("");
 
 	useEffect(() => {
 		console.log("Hello from the popup!");
 	}, []);
 
-	const cleanFormHtml = async () => {
-		setIsCleaning(true);
+	const fillFormWithAI = async () => {
+		setIsProcessing(true);
 		setError(null);
 		setResult(null);
+		setStatus("");
 
 		try {
 			const [tab] = await browser.tabs.query({
@@ -34,91 +34,66 @@ export default function () {
 				throw new Error("No active tab found");
 			}
 
-			const response = await browser.tabs.sendMessage(tab.id, {
+			// Step 1: Analyze Form
+			setStatus("🔍 Analyzing form...");
+			const analyzeResponse = await browser.tabs.sendMessage(tab.id, {
 				action: "analyzeForm",
 			});
 
-			if (response) {
-				setResult(response);
-				console.log("✅ [POPUP] Clean form HTML result:", response);
-				console.log("🧹 [POPUP] Cleaned HTML:", response.cleanHtml);
-			} else {
-				setError("No form elements found on this page");
-			}
-		} catch (err) {
-			console.error("Form cleaning failed:", err);
-			setError(
-				"Failed to clean form HTML. Make sure you're on a page with form elements."
-			);
-		} finally {
-			setIsCleaning(false);
-		}
-	};
-
-	const testGeminiAPI = async () => {
-		setIsTestingAI(true);
-		setError(null);
-		setTestResult(null);
-
-		try {
-			// Get the current active tab
-			const [tab] = await browser.tabs.query({
-				active: true,
-				currentWindow: true,
-			});
-
-			if (!tab.id) {
-				throw new Error("No active tab found");
+			if (!analyzeResponse) {
+				throw new Error("No form elements found on this page");
 			}
 
-			// Send message to content script to test Gemini API
-			const response = await browser.tabs.sendMessage(tab.id, {
-				action: "testGeminiAPI",
-				message: "hi",
+			setResult(analyzeResponse);
+			console.log("✅ [POPUP] Form analyzed:", analyzeResponse);
+
+			// Step 2: Fill Form with AI
+			setStatus("🤖 Generating and applying form data...");
+			const fillResponse = await browser.tabs.sendMessage(tab.id, {
+				action: "fillForm",
 			});
 
-			if (response && response.success) {
-				setTestResult(response.reply);
-				console.log("Gemini API test successful:", response.reply);
+			if (fillResponse && fillResponse.success) {
+				setStatus(
+					"✅ Form filled successfully with AI-generated data!"
+				);
+				console.log("Form filling successful:", fillResponse);
 			} else {
-				setError(
-					response?.error ||
-						"Failed to test Gemini API. Check your API key."
+				throw new Error(
+					fillResponse?.error ||
+						"Failed to fill form with AI. Check your API key."
 				);
 			}
 		} catch (err) {
-			console.error("Gemini API test failed:", err);
+			console.error("Form filling failed:", err);
 			setError(
-				"Failed to test Gemini API. Make sure you have a valid API key."
+				err instanceof Error
+					? err.message
+					: "Failed to fill form. Make sure you're on a page with form elements and have a valid API key."
 			);
+			setStatus("");
 		} finally {
-			setIsTestingAI(false);
+			setIsProcessing(false);
 		}
 	};
 
 	return (
 		<div>
 			<button
-				onClick={cleanFormHtml}
-				disabled={isCleaning}
-				className="analyze-button"
+				onClick={fillFormWithAI}
+				disabled={isProcessing}
+				className="fill-form-button"
 			>
-				{isCleaning ? "Cleaning..." : "Clean Form HTML"}
+				{isProcessing ? "Processing..." : "🤖 Auto Fill Form with AI"}
 			</button>
 
-			<button
-				onClick={testGeminiAPI}
-				disabled={isTestingAI}
-				className="test-button"
-			>
-				{isTestingAI ? "Testing..." : "Test Gemini API"}
-			</button>
+			{status && <div className="status-message">{status}</div>}
 
 			{error && <div className="error-message">{error}</div>}
 
 			{result && (
 				<div className="result">
-					<h3>Cleaned Form HTML:</h3>
+					<h3>Form Analysis:</h3>
 					<p>
 						<strong>Form elements found:</strong>{" "}
 						{result.inputCount}
@@ -129,13 +104,6 @@ export default function () {
 					<div className="html-output">
 						<pre>{result.cleanHtml}</pre>
 					</div>
-				</div>
-			)}
-
-			{testResult && (
-				<div className="test-result">
-					<h3>Gemini API Test Result:</h3>
-					<p>{testResult}</p>
 				</div>
 			)}
 		</div>
