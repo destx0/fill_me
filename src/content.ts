@@ -13,7 +13,6 @@ browser.runtime.onMessage.addListener(
 		if (message.action === "analyzeForm") {
 			console.log("🔍 [ANALYZE] Starting form analysis...");
 
-			// Find the best form using the htmlCleaner logic
 			const formElement = selectBestForm();
 
 			if (!formElement) {
@@ -62,7 +61,7 @@ browser.runtime.onMessage.addListener(
 			return true;
 		} else if (message.action === "fillForm") {
 			console.log("🤖 [FILL] Filling form with AI-generated data...");
-			fillFormWithAI()
+			fillFormWithAI(message.userDetails)
 				.then((result) => sendResponse(result))
 				.catch((error) =>
 					sendResponse({
@@ -86,7 +85,7 @@ browser.runtime.onMessage.addListener(
 
 console.log("🚀 Form Bot content script loaded");
 
-async function askGeminiAPI(): Promise<{
+async function askGeminiAPI(userDetails?: any): Promise<{
 	success: boolean;
 	reply?: string;
 	error?: string;
@@ -105,6 +104,30 @@ async function askGeminiAPI(): Promise<{
 
 		const { geminiModel } = await import("./firebase");
 
+		// Use provided user details or fallback to default
+		const portfolioInfo =
+			userDetails && userDetails.personalInfo
+				? userDetails.personalInfo
+				: `Full Name: Alex Johnson
+Email: alex.johnson.dev@gmail.com
+Phone: +1 (555) 123-4567
+Address: 123 Tech Street, San Francisco, CA 94102, USA
+Date of Birth: March 15, 1995
+LinkedIn: https://linkedin.com/in/alexjohnsondev
+GitHub: https://github.com/alexjohnsondev
+Portfolio Website: https://alexjohnson.dev
+Current Position: Senior Full Stack Developer
+Company: TechCorp Solutions
+Years of Experience: 6 years
+Education: Bachelor's in Computer Science, Stanford University (2017)
+Skills: JavaScript, TypeScript, React, Node.js, Python, AWS, Docker, MongoDB, PostgreSQL, Git, Agile, Machine Learning
+Certifications: AWS Certified Developer, Google Cloud Professional
+Languages: English (Native), Spanish (Conversational)
+Salary Expectation: $120,000 - $150,000
+Availability: Immediate (2 weeks notice)
+Work Authorization: US Citizen
+Preferred Work Type: Hybrid/Remote`;
+
 		// Create a prompt that asks Gemini to generate JavaScript code to fill the form
 		const prompt = `You are an intelligent assistant that generates JavaScript code to fill HTML forms based on provided user portfolio information.
 Given an HTML form structure, your task is to generate a JavaScript code block that, when executed in a browser,
@@ -113,25 +136,7 @@ with plausible and diverse data derived from the user's portfolio.
 For queries where you lack information - answer in a way which increase my changes of getting selected.
 
 USER PORTFOLIO INFORMATION:
-- Full Name: Alex Johnson
-- Email: alex.johnson.dev@gmail.com
-- Phone: +1 (555) 123-4567
-- Address: 123 Tech Street, San Francisco, CA 94102, USA
-- Date of Birth: March 15, 1995
-- LinkedIn: https://linkedin.com/in/alexjohnsondev
-- GitHub: https://github.com/alexjohnsondev
-- Portfolio Website: https://alexjohnson.dev
-- Current Position: Senior Full Stack Developer
-- Company: TechCorp Solutions
-- Years of Experience: 6 years
-- Education: Bachelor's in Computer Science, Stanford University (2017)
-- Skills: JavaScript, TypeScript, React, Node.js, Python, AWS, Docker, MongoDB, PostgreSQL, Git, Agile, Machine Learning
-- Certifications: AWS Certified Developer, Google Cloud Professional
-- Languages: English (Native), Spanish (Conversational)
-- Salary Expectation: $120,000 - $150,000
-- Availability: Immediate (2 weeks notice)
-- Work Authorization: US Citizen
-- Preferred Work Type: Hybrid/Remote
+${portfolioInfo}
 
 Instructions for Form Filling:
 - General Fields: Fill fields like name, email, phone, address, experience, skills, etc., using information from the provided portfolio.
@@ -170,7 +175,7 @@ Generate JavaScript code to fill this form with professional and compelling data
 	}
 }
 
-async function fillFormWithAI(): Promise<{
+async function fillFormWithAI(userDetails?: any): Promise<{
 	success: boolean;
 	message?: string;
 	error?: string;
@@ -189,7 +194,7 @@ async function fillFormWithAI(): Promise<{
 		}
 
 		// Get the JavaScript code from Gemini
-		const geminiResult = await askGeminiAPI();
+		const geminiResult = await askGeminiAPI(userDetails);
 
 		if (!geminiResult.success || !geminiResult.reply) {
 			return {
