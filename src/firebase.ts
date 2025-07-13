@@ -1,7 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createGroq } from "@ai-sdk/groq";
+import { generateText } from "ai";
+// import { GoogleGenerativeAI } from "@google/generative-ai"; // Disabled
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -19,12 +21,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
-
-// Get the generative model
-export const geminiModel = genAI.getGenerativeModel({
-	model: "gemini-2.5-flash",
+// Initialize Groq AI with Vercel AI SDK
+export const groq = createGroq({
+	apiKey: import.meta.env.VITE_GROQ_API_KEY,
 });
+
+// Gemini setup (disabled)
+// const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
+// export const geminiModel = genAI.getGenerativeModel({
+// 	model: "gemini-2.5-flash-lite-preview-06-17",
+// });
+
+// AI Text Generation function using Groq
+export async function generateAIText(prompt: string): Promise<string> {
+	const { text } = await generateText({
+		model: groq("meta-llama/llama-4-maverick-17b-128e-instruct"),
+		prompt: prompt,
+		temperature: 0.7,
+		maxTokens: 4096,
+	});
+
+	return text;
+}
 
 export { app, analytics };

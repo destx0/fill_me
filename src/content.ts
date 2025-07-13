@@ -49,8 +49,8 @@ browser.runtime.onMessage.addListener(
 			sendResponse(result);
 			return true;
 		} else if (message.action === "testGeminiAPI") {
-			console.log("🧪 [TEST] Testing Gemini API...");
-			askGeminiAPI()
+			console.log("🧪 [TEST] Testing Groq API...");
+			askGroqAPI()
 				.then((result) => sendResponse(result))
 				.catch((error) =>
 					sendResponse({
@@ -85,13 +85,13 @@ browser.runtime.onMessage.addListener(
 
 console.log("🚀 Form Bot content script loaded");
 
-async function askGeminiAPI(userDetails?: any): Promise<{
+async function askGroqAPI(userDetails?: any): Promise<{
 	success: boolean;
 	reply?: string;
 	error?: string;
 }> {
 	try {
-		console.log("🧪 Testing Gemini API...");
+		console.log("🧪 Testing Groq API...");
 
 		// Check if we have analyzed form HTML
 		if (!analyzedFormHtml) {
@@ -102,72 +102,44 @@ async function askGeminiAPI(userDetails?: any): Promise<{
 			};
 		}
 
-		const { geminiModel } = await import("./firebase");
+		const { generateAIText } = await import("./firebase");
 
 		// Use provided user details or fallback to default
 		const portfolioInfo =
 			userDetails && userDetails.personalInfo
 				? userDetails.personalInfo
-				: `Full Name: Alex Johnson
-Email: alex.johnson.dev@gmail.com
-Phone: +1 (555) 123-4567
-Address: 123 Tech Street, San Francisco, CA 94102, USA
-Date of Birth: March 15, 1995
-LinkedIn: https://linkedin.com/in/alexjohnsondev
-GitHub: https://github.com/alexjohnsondev
-Portfolio Website: https://alexjohnson.dev
-Current Position: Senior Full Stack Developer
-Company: TechCorp Solutions
-Years of Experience: 6 years
-Education: Bachelor's in Computer Science, Stanford University (2017)
-Skills: JavaScript, TypeScript, React, Node.js, Python, AWS, Docker, MongoDB, PostgreSQL, Git, Agile, Machine Learning
-Certifications: AWS Certified Developer, Google Cloud Professional
-Languages: English (Native), Spanish (Conversational)
-Salary Expectation: $120,000 - $150,000
-Availability: Immediate (2 weeks notice)
-Work Authorization: US Citizen
-Preferred Work Type: Hybrid/Remote`;
+				: `hii`;
 
 		// Create a prompt that asks Gemini to generate JavaScript code to fill the form
-		const prompt = `You are an intelligent assistant that generates JavaScript code to fill HTML forms based on provided user portfolio information.
-Given an HTML form structure, your task is to generate a JavaScript code block that, when executed in a browser,
-will intelligently fill in all input fields (text, email, number, password, date, tel, url), textareas, and select elements
-with plausible and diverse data derived from the user's portfolio.
-For queries where you lack information - answer in a way which increase my changes of getting selected.
+		const prompt = `You are an expert assistant that generates JavaScript code to fill out HTML forms using provided user portfolio information.
+Given an HTML form structure, generate a JavaScript code block that, when executed in a browser, will:
+- Fill ALL input fields (text, email, number, password, date, tel, url), textareas, and select (dropdown) elements with plausible, diverse, and professional data derived from the user's portfolio.
+- For radio buttons: Select the most relevant option based on the portfolio, or choose a plausible default if no match.
+- For checkboxes: Select all that are relevant to the portfolio, or a reasonable subset if no direct match.
+- For dropdowns (select): Choose the option that best matches the portfolio, or a plausible default.
+- For all fields: If portfolio info is missing, fill with realistic, professional data that increases the chance of selection.
+- Target fields using document.querySelector() or document.querySelectorAll() with id or name attributes. Prefer id, then name, then fallback to tag and index.
+- Do NOT include any comments, HTML, Markdown, or extra text. Output ONLY the raw JavaScript code, ready to execute.
 
 USER PORTFOLIO INFORMATION:
 ${portfolioInfo}
 
-Instructions for Form Filling:
-- General Fields: Fill fields like name, email, phone, address, experience, skills, etc., using information from the provided portfolio.
-- Select Elements: Pick a valid option from the available choices in the <select> element that best matches the portfolio information.
-- Checkboxes/Radio Buttons: Select one or more (for checkboxes) or one (for radio buttons) based on relevance to the portfolio, or if no direct match, make a plausible selection.
-- Targeting Fields: IMPORTANT: Ensure the generated JavaScript directly targets form fields using document.querySelector() with their name or id attributes. For example, instead of form.name.value, use document.querySelector('input[name="name"]').value or document.querySelector('#email-field-id').value. If an element has both id and name, prefer id. If neither is present, use their tag name and index (e.g., document.querySelectorAll('input')[0]).
-
-Output Format:
-- The JavaScript should be a self-contained block, ready to be executed.
-- Do NOT include any HTML, Markdown formatting (like \`\`\`javascript), or extra text outside the JavaScript code itself.
-- Just provide the raw JavaScript code.
-
-Here is the form HTML:
-
+FORM HTML:
 ${analyzedFormHtml}
 
-Generate JavaScript code to fill this form with professional and compelling data that will increase the chances of getting selected.`;
+Generate the JavaScript code now.`;
 
-		console.log("📤 Sending form HTML to Gemini for analysis...");
-		const result = await geminiModel.generateContent(prompt);
-		const response = await result.response;
-		const text = response.text();
+		console.log("📤 Sending form HTML to Groq for analysis...");
+		const text = await generateAIText(prompt);
 
-		console.log("🤖 Gemini Response:", text);
+		console.log("🤖 Groq Response:", text);
 
 		return {
 			success: true,
 			reply: text,
 		};
 	} catch (error) {
-		console.error("❌ Gemini API test failed:", error);
+		console.error("❌ Groq API test failed:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
@@ -193,22 +165,20 @@ async function fillFormWithAI(userDetails?: any): Promise<{
 			};
 		}
 
-		// Get the JavaScript code from Gemini
-		const geminiResult = await askGeminiAPI(userDetails);
+		// Get the JavaScript code from Groq
+		const groqResult = await askGroqAPI(userDetails);
 
-		if (!geminiResult.success || !geminiResult.reply) {
+		if (!groqResult.success || !groqResult.reply) {
 			return {
 				success: false,
 				error:
-					"Failed to generate form filling code from Gemini: " +
-					(geminiResult.error || "Unknown error"),
+					"Failed to generate form filling code from Groq: " +
+					(groqResult.error || "Unknown error"),
 			};
 		}
 
-		const generatedCode = geminiResult.reply;
-		console.log(
-			"📝 [GENERATED CODE] Received JavaScript code from Gemini:"
-		);
+		const generatedCode = groqResult.reply;
+		console.log("📝 [GENERATED CODE] Received JavaScript code from Groq:");
 		console.log(generatedCode);
 
 		// Execute the generated JavaScript code

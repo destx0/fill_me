@@ -20,7 +20,7 @@ export function selectBestForm(): Element | null {
 			form.hidden;
 
 		const visibleInputs = form.querySelectorAll(
-			"input:not([type='hidden']), select, textarea"
+			"input, select, textarea"
 		).length;
 
 		// Form must have at least 50% of page's total inputs
@@ -41,19 +41,17 @@ export function selectBestForm(): Element | null {
 	if (relevantForms.length > 0) {
 		const bestForm = relevantForms.reduce((best, current) => {
 			const bestInputs = best.querySelectorAll(
-				"input:not([type='hidden']), select, textarea"
+				"input, select, textarea"
 			).length;
 			const currentInputs = current.querySelectorAll(
-				"input:not([type='hidden']), select, textarea"
+				"input, select, textarea"
 			).length;
 			return currentInputs > bestInputs ? current : best;
 		});
 
 		console.log(
 			`✅ [SELECTED] Using form: ${bestForm.id || "unnamed"} with ${
-				bestForm.querySelectorAll(
-					"input:not([type='hidden']), select, textarea"
-				).length
+				bestForm.querySelectorAll("input, select, textarea").length
 			} visible inputs`
 		);
 
