@@ -21,6 +21,12 @@ export function generateFormFillPrompt(variables: PromptVariables): string {
 	return `You are an expert assistant that generates JavaScript code to fill out HTML forms using provided user portfolio information.
 Given an HTML form structure, generate a JavaScript code block that, when executed in a browser, will:
 - Fill ALL input fields (text, email, number, password, date, tel, url), textareas, and select (dropdown) elements with plausible, diverse, and professional data derived from the user's portfolio.
+- SMART DATA FILLING: Use contextual intelligence to fill all fields even when exact data isn't in the portfolio:
+  1. Infer related information from available data (e.g., if location is provided, infer timezone, area code, etc.)
+  2. Generate realistic, professional data that's contextually appropriate
+  3. Make intelligent assumptions based on industry, role, education, or other provided context
+  4. Fill missing personal details with plausible alternatives that maintain consistency
+- NEVER SUBMIT THE FORM: Do not click submit buttons, form submission buttons, or trigger form submission events. Only fill the form fields.
 - CRITICAL: For each field, you must simulate real user interaction by:
   1. First calling .focus() on the field to focus it
   2. Then setting the value using .value = "your_value"
@@ -49,9 +55,14 @@ Given an HTML form structure, generate a JavaScript code block that, when execut
   3. For number fields, use valid numeric values within any specified min/max ranges
   4. For date fields, use proper date format (YYYY-MM-DD or MM/DD/YYYY based on input type)
 - Add appropriate delays between actions: setTimeout(() => { /* action */ }, 100-200);
-- For all fields: If portfolio info is missing, fill with realistic, professional data that increases the chance of selection.
+- SMART CONTEXTUAL FILLING: For all fields, use intelligent inference to fill data even when not explicitly provided:
+  1. Use contextual clues from existing portfolio information to generate related data
+  2. Maintain consistency across all fields (e.g., location-based phone numbers, appropriate time zones)
+  3. Generate professional, realistic data that increases chances of positive evaluation
+  4. Fill missing information with industry-appropriate defaults based on available context
 - Target fields using document.querySelector() or document.querySelectorAll() with id, name, or type attributes. Prefer id, then name, then type selectors.
 - After filling all fields, add a final delay and trigger a form validation check if possible.
+- IMPORTANT: Do NOT submit the form, click submit buttons, or trigger form submission events.
 - Do NOT include any comments, HTML, Markdown, or extra text. Output ONLY the raw JavaScript code, ready to execute.
 
 USER PORTFOLIO INFORMATION:
