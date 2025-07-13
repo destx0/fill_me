@@ -54,6 +54,11 @@ Given an HTML form structure, generate a JavaScript code block that, when execut
   2. For email fields, use proper email format: firstname.lastname@domain.com
   3. For number fields, use valid numeric values within any specified min/max ranges
   4. For date fields, use proper date format (YYYY-MM-DD or MM/DD/YYYY based on input type)
+- READONLY AND DISABLED FIELDS: Do NOT modify fields that are:
+  1. Marked with readonly attribute (readonly="true" or readonly)
+  2. Marked with disabled attribute (disabled="true" or disabled)
+  3. Have readOnly property set to true
+  4. Skip these fields entirely - do not focus, set values, or trigger events on them
 - Add appropriate delays between actions: setTimeout(() => { /* action */ }, 100-200);
 - SMART CONTEXTUAL FILLING: For all fields, use intelligent inference to fill data even when not explicitly provided:
   1. Use contextual clues from existing portfolio information to generate related data
