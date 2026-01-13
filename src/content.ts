@@ -61,8 +61,8 @@ browser.runtime.onMessage.addListener(
 				);
 			return true;
 		} else if (message.action === "fillForm") {
-			console.log("🤖 [FILL] Filling form with AI-generated data...");
-			fillFormWithAI(message.userDetails)
+			console.log("[FILL] Filling form with AI-generated data...");
+			fillFormWithAI(message.userDetails, message.settings)
 				.then((result) => sendResponse(result))
 				.catch((error) =>
 					sendResponse({
@@ -86,48 +86,47 @@ browser.runtime.onMessage.addListener(
 
 console.log("🚀 Form Bot content script loaded");
 
-async function askGroqAPI(userDetails?: any): Promise<{
+async function askGroqAPI(userDetails?: any, settings?: any): Promise<{
 	success: boolean;
 	reply?: string;
 	error?: string;
 }> {
 	try {
-		console.log("🧪 Testing Groq API...");
-
-		// Check if we have analyzed form HTML
 		if (!analyzedFormHtml) {
-			console.warn("⚠️ No analyzed form HTML available");
 			return {
 				success: false,
 				error: "No form has been analyzed yet. Please analyze a form first.",
 			};
 		}
 
+		if (!settings?.apiKey) {
+			return {
+				success: false,
+				error: "No API key provided. Please add your Groq API key in settings.",
+			};
+		}
+
 		const { generateAIText } = await import("./groq");
 
-		// Use provided user details or fallback to default
 		const portfolioInfo =
 			userDetails && userDetails.personalInfo
 				? userDetails.personalInfo
-				: `hii`;
+				: "";
 
-		// Generate prompt using the template
 		const prompt = generateFormFillPrompt({
 			userPortfolioInfo: portfolioInfo,
 			formHtml: analyzedFormHtml,
 		});
 
-		console.log("📤 Sending form HTML to Groq for analysis...");
-		const text = await generateAIText(prompt);
-
-		console.log("🤖 Groq Response:", text);
+		console.log("[GROQ] Sending request...");
+		const text = await generateAIText(prompt, settings.apiKey, settings.model);
 
 		return {
 			success: true,
 			reply: text,
 		};
 	} catch (error) {
-		console.error("❌ Groq API test failed:", error);
+		console.error("[GROQ] API failed:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
@@ -135,91 +134,66 @@ async function askGroqAPI(userDetails?: any): Promise<{
 	}
 }
 
-async function fillFormWithAI(userDetails?: any): Promise<{
+async function fillFormWithAI(userDetails?: any, settings?: any): Promise<{
 	success: boolean;
 	message?: string;
 	error?: string;
 	generatedCode?: string;
 }> {
 	try {
-		console.log("🤖 [AI FILL] Starting AI form filling process...");
+		console.log("[AI FILL] Starting AI form filling...");
 
-		// Check if we have analyzed form HTML
 		if (!analyzedFormHtml || !analyzedFormElement) {
-			console.warn("⚠️ No analyzed form HTML or element available");
 			return {
 				success: false,
 				error: "No form has been analyzed yet. Please analyze a form first.",
 			};
 		}
 
-		// Get the JavaScript code from Groq
-		const groqResult = await askGroqAPI(userDetails);
+		const groqResult = await askGroqAPI(userDetails, settings);
 
 		if (!groqResult.success || !groqResult.reply) {
 			return {
 				success: false,
-				error:
-					"Failed to generate form filling code from Groq: " +
-					(groqResult.error || "Unknown error"),
+				error: "Failed to generate form filling code: " + (groqResult.error || "Unknown error"),
 			};
 		}
 
 		const generatedCode = groqResult.reply;
-		console.log("📝 [GENERATED CODE] Received JavaScript code from Groq:");
-		console.log(generatedCode);
+		console.log("[GENERATED CODE]", generatedCode);
 
-		// Execute the generated JavaScript code
 		try {
-			// Clean the code by removing markdown code blocks if present
 			const cleanCode = generatedCode
 				.replace(/```javascript\s*/g, "")
 				.replace(/```\s*/g, "")
 				.trim();
 
-			console.log(
-				"⚡ [EXECUTE] Sending code to background script for execution..."
-			);
-
-			// Send the code to background script for execution using scripting API
 			const executeResult = await browser.runtime.sendMessage({
 				action: "executeCode",
 				code: cleanCode,
 			});
 
 			if (executeResult && executeResult.success) {
-				console.log(
-					"✅ [SUCCESS] Form filled successfully with AI-generated data!"
-				);
+				console.log("[SUCCESS] Form filled!");
 			} else {
-				throw new Error(
-					executeResult?.error ||
-						"Failed to execute code via background script"
-				);
+				throw new Error(executeResult?.error || "Failed to execute code");
 			}
 
 			return {
 				success: true,
-				message: "Form filled successfully with AI-generated data!",
+				message: "Form filled successfully!",
 				generatedCode: cleanCode,
 			};
 		} catch (executeError) {
-			console.error(
-				"❌ [EXECUTE ERROR] Failed to execute generated code:",
-				executeError
-			);
+			console.error("[EXECUTE ERROR]", executeError);
 			return {
 				success: false,
-				error: `Failed to execute generated code: ${
-					executeError instanceof Error
-						? executeError.message
-						: "Unknown execution error"
-				}`,
+				error: `Failed to execute code: ${executeError instanceof Error ? executeError.message : "Unknown error"}`,
 				generatedCode: generatedCode,
 			};
 		}
 	} catch (error) {
-		console.error("❌ [AI FILL ERROR] AI form filling failed:", error);
+		console.error("[AI FILL ERROR]", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",

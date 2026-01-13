@@ -1,20 +1,21 @@
-// Groq API key
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-
 // AI Text Generation function using Groq REST API directly
-export async function generateAIText(prompt: string): Promise<string> {
-	console.log("🔄 [GROQ] Starting API call...");
-	console.log("📝 [GROQ] Prompt length:", prompt.length);
+export async function generateAIText(
+	prompt: string,
+	apiKey: string,
+	model: string = "openai/gpt-oss-120b"
+): Promise<string> {
+	console.log("[GROQ] Starting API call...");
+	console.log("[GROQ] Model:", model);
 
 	try {
 		const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${GROQ_API_KEY}`,
+				Authorization: `Bearer ${apiKey}`,
 			},
 			body: JSON.stringify({
-				model: "llama-3.3-70b-versatile",
+				model: model,
 				messages: [
 					{
 						role: "user",
@@ -28,22 +29,17 @@ export async function generateAIText(prompt: string): Promise<string> {
 
 		if (!response.ok) {
 			const errorData = await response.text();
-			console.error("❌ [GROQ] API error response:", errorData);
+			console.error("[GROQ] API error:", errorData);
 			throw new Error(`Groq API error: ${response.status} - ${errorData}`);
 		}
 
 		const data = await response.json();
 		const text = data.choices?.[0]?.message?.content || "";
 
-		console.log("✅ [GROQ] API call successful!");
-		console.log("📊 [GROQ] Response text length:", text.length);
-		console.log("📄 [GROQ] Response text preview:", text.substring(0, 500));
-		console.log("📄 [GROQ] Full response:", text);
-
+		console.log("[GROQ] Success, response length:", text.length);
 		return text;
 	} catch (error) {
-		console.error("❌ [GROQ] API call failed!");
-		console.error("❌ [GROQ] Error:", error);
+		console.error("[GROQ] API call failed:", error);
 		throw error;
 	}
 }

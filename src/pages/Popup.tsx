@@ -6,65 +6,100 @@ interface UserDetails {
 	personalInfo: string;
 }
 
+interface Settings {
+	apiKey: string;
+	model: string;
+	customModel: string;
+}
+
+const MODELS = [
+	{ id: "openai/gpt-oss-120b", name: "GPT OSS 120B" },
+	{ id: "meta-llama/llama-4-maverick-17b-128e-instruct", name: "Llama 4 Maverick" },
+	{ id: "custom", name: "Custom" },
+];
+
 const defaultUserDetails: UserDetails = {
-	personalInfo: `Full Name: Alex Johnson
-Email: alex.johnson.dev@gmail.com
-Phone: +1 (555) 123-4567
-Address: 123 Tech Street, San Francisco, CA 94102, USA
-Date of Birth: March 15, 1995
-LinkedIn: https://linkedin.com/in/alexjohnsondev
-GitHub: https://github.com/alexjohnsondev
-Portfolio Website: https://alexjohnson.dev
-Current Position: Senior Full Stack Developer
-Company: TechCorp Solutions
-Years of Experience: 6 years
-Education: Bachelor's in Computer Science, Stanford University (2017)
-Skills: JavaScript, TypeScript, React, Node.js, Python, AWS, Docker, MongoDB, PostgreSQL, Git, Agile, Machine Learning
-Certifications: AWS Certified Developer, Google Cloud Professional
-Languages: English (Native), Spanish (Conversational)
-Salary Expectation: $120,000 - $150,000
-Availability: Immediate (2 weeks notice)
-Work Authorization: US Citizen
-Preferred Work Type: Hybrid/Remote`,
+	personalInfo: `Full Name: Rahul Sharma
+Email: rahul.sharma.dev@gmail.com
+Phone: +91 98765 43210
+Address: 42, Koramangala 4th Block, Bangalore, Karnataka 560034, India
+Date of Birth: 15/03/1995
+Gender: Male
+LinkedIn: https://linkedin.com/in/rahulsharmadev
+GitHub: https://github.com/rahulsharmadev
+Portfolio: https://rahulsharma.dev
+
+Current Position: Senior Software Engineer
+Current Company: Infosys
+Current CTC: 18 LPA
+Expected CTC: 25-30 LPA
+Notice Period: 60 days (Negotiable)
+Years of Experience: 5 years
+`,
+};
+
+const defaultSettings: Settings = {
+	apiKey: "",
+	model: "openai/gpt-oss-120b",
+	customModel: "",
 };
 
 export default function () {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [status, setStatus] = useState<string>("");
-	const [userDetails, setUserDetails] =
-		useState<UserDetails>(defaultUserDetails);
+	const [userDetails, setUserDetails] = useState<UserDetails>(defaultUserDetails);
+	const [settings, setSettings] = useState<Settings>(defaultSettings);
+	const [showSettings, setShowSettings] = useState(false);
 
 	useEffect(() => {
-		loadUserDetails();
+		loadData();
 	}, []);
 
-	const loadUserDetails = async () => {
+	const loadData = async () => {
 		try {
-			const stored = await browser.storage.local.get("userDetails");
+			const stored = await browser.storage.local.get(["userDetails", "settings"]);
 			if (stored.userDetails) {
 				setUserDetails(stored.userDetails);
 			}
+			if (stored.settings) {
+				setSettings({ ...defaultSettings, ...stored.settings });
+			}
 		} catch (error) {
-			console.error("Failed to load user details:", error);
+			console.error("Failed to load data:", error);
 		}
 	};
 
-	const saveUserDetails = async () => {
+	const saveData = async () => {
 		try {
-			await browser.storage.local.set({ userDetails });
+			await browser.storage.local.set({ userDetails, settings });
 		} catch (error) {
-			console.error("Failed to save user details:", error);
+			console.error("Failed to save data:", error);
 		}
+	};
+
+	const getActiveModel = () => {
+		return settings.model === "custom" ? settings.customModel : settings.model;
 	};
 
 	const fillFormWithAI = async () => {
+		if (!settings.apiKey) {
+			setError("Please add your Groq API key in settings");
+			setShowSettings(true);
+			return;
+		}
+
+		if (settings.model === "custom" && !settings.customModel) {
+			setError("Please enter a custom model name");
+			setShowSettings(true);
+			return;
+		}
+
 		setIsProcessing(true);
 		setError(null);
 		setStatus("");
 
-		// Auto-save user details when filling form
-		await saveUserDetails();
+		await saveData();
 
 		try {
 			const [tab] = await browser.tabs.query({
@@ -85,57 +120,97 @@ export default function () {
 				throw new Error("No form elements found on this page");
 			}
 
-			console.log("[POPUP] Form analyzed:", analyzeResponse);
-
 			setStatus("Generating and applying form data...");
 			const fillResponse = await browser.tabs.sendMessage(tab.id, {
 				action: "fillForm",
 				userDetails: userDetails,
+				settings: { ...settings, model: getActiveModel() },
 			});
 
 			if (fillResponse && fillResponse.success) {
 				setStatus("Form filled successfully!");
-				console.log("Form filling successful:", fillResponse);
 			} else {
-				throw new Error(
-					fillResponse?.error ||
-						"Failed to fill form with AI. Check your API key."
-				);
+				throw new Error(fillResponse?.error || "Failed to fill form with AI.");
 			}
 		} catch (err) {
 			console.error("Form filling failed:", err);
-			setError(
-				err instanceof Error
-					? err.message
-					: "Failed to fill form. Make sure you're on a page with form elements and have a valid API key."
-			);
+			setError(err instanceof Error ? err.message : "Failed to fill form.");
 			setStatus("");
 		} finally {
 			setIsProcessing(false);
 		}
 	};
 
-	const handleInputChange = (value: string) => {
-		setUserDetails({ personalInfo: value });
-	};
-
 	return (
 		<div className="popup-container">
-			<textarea
-				className="user-details-input"
-				value={userDetails.personalInfo}
-				onChange={(e) => handleInputChange(e.target.value)}
-				placeholder="Enter your personal and professional information here..."
-				rows={12}
-			/>
+			<div className="header-row">
+				<button
+					className="settings-toggle"
+					onClick={() => setShowSettings(!showSettings)}
+				>
+					{showSettings ? "Back" : "Settings"}
+				</button>
+			</div>
 
-			<button
-				onClick={fillFormWithAI}
-				disabled={isProcessing}
-				className="fill-form-button"
-			>
-				{isProcessing ? "Filling..." : "Fill"}
-			</button>
+			{showSettings ? (
+				<div className="settings-panel">
+					<div className="settings-section">
+						<label className="input-label">Groq API Key</label>
+						<input
+							type="password"
+							className="text-input"
+							value={settings.apiKey}
+							onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
+							placeholder="gsk_..."
+						/>
+					</div>
+
+					<div className="settings-section">
+						<label className="input-label">Model</label>
+						<div className="model-buttons">
+							{MODELS.map((m) => (
+								<button
+									key={m.id}
+									className={`model-btn ${settings.model === m.id ? "active" : ""}`}
+									onClick={() => setSettings({ ...settings, model: m.id })}
+								>
+									{m.name}
+								</button>
+							))}
+						</div>
+						{settings.model === "custom" && (
+							<input
+								type="text"
+								className="text-input"
+								value={settings.customModel}
+								onChange={(e) => setSettings({ ...settings, customModel: e.target.value })}
+								placeholder="Enter model name..."
+							/>
+						)}
+					</div>
+
+					<button className="save-button" onClick={saveData}>
+						Save
+					</button>
+				</div>
+			) : (
+				<>
+					<textarea
+						className="user-details-input"
+						value={userDetails.personalInfo}
+						onChange={(e) => setUserDetails({ personalInfo: e.target.value })}
+						placeholder="Enter your personal and professional information here..."
+					/>
+
+					<button
+						onClick={fillFormWithAI}
+						disabled={isProcessing}
+						className="fill-form-button"
+					>
+						{isProcessing ? "Filling..." : "Fill"}
+					</button>
+				</>
+			)}
 
 			{status && <div className="status-message">{status}</div>}
 			{error && <div className="error-message">{error}</div>}

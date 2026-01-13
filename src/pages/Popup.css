@@ -29,21 +29,39 @@ html, body {
   color: #2d2d2d;
 }
 
-.popup-header {
+/* Header */
+.header-row {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotate(-1deg);
+  justify-content: flex-end;
 }
 
-.popup-icon {
-  width: 48px;
-  height: 48px;
-  border: 3px solid #2d2d2d;
-  box-shadow: 3px 3px 0px 0px #2d2d2d;
+.settings-toggle {
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #2d2d2d;
+  border: 2px solid #2d2d2d;
   border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+  font-size: 15px;
+  font-family: 'Patrick Hand', cursive;
+  cursor: pointer;
+  transition: all 0.1s;
+  transform: rotate(1deg);
 }
 
+.settings-toggle:hover {
+  background: #2d5da1;
+  color: #ffffff;
+  box-shadow: 2px 2px 0px 0px #2d2d2d;
+  transform: rotate(-1deg) translate(1px, 1px);
+}
+
+.settings-toggle:active {
+  box-shadow: none;
+  transform: rotate(0deg) translate(3px, 3px);
+}
+
+/* Main textarea */
 .user-details-input {
   flex: 1;
   width: 100%;
@@ -84,6 +102,7 @@ html, body {
   border-radius: 4px;
 }
 
+/* Fill button */
 .fill-form-button {
   width: 100%;
   padding: 14px 20px;
@@ -124,6 +143,7 @@ html, body {
   transform: rotate(-1deg) translate(0, 0);
 }
 
+/* Status messages */
 .status-message {
   padding: 12px 16px;
   background: #ffffff;
@@ -147,4 +167,124 @@ html, body {
   text-align: center;
   font-family: 'Patrick Hand', cursive;
   transform: rotate(-0.5deg);
+}
+
+/* Settings panel */
+.settings-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-label {
+  font-size: 18px;
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
+  color: #2d2d2d;
+  transform: rotate(-0.5deg);
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 3px solid #2d2d2d;
+  border-radius: 15px 8px 12px 20px / 8px 15px 20px 12px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+  color: #2d2d2d;
+  font-size: 15px;
+  font-family: 'Patrick Hand', cursive;
+  transition: all 0.1s;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #2d5da1;
+  box-shadow: 2px 2px 0px 0px #2d5da1;
+}
+
+.text-input::placeholder {
+  color: rgba(45, 45, 45, 0.4);
+}
+
+/* Model buttons */
+.model-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #2d2d2d;
+  border: 2px solid #2d2d2d;
+  border-radius: 12px 20px 15px 8px / 20px 12px 8px 15px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+  font-size: 14px;
+  font-family: 'Patrick Hand', cursive;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.model-btn:hover {
+  background: #e5e0d8;
+  box-shadow: 2px 2px 0px 0px #2d2d2d;
+  transform: translate(1px, 1px);
+}
+
+.model-btn:active {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+
+.model-btn.active {
+  background: #2d5da1;
+  color: #ffffff;
+  border-color: #2d2d2d;
+  transform: rotate(-1deg);
+}
+
+.model-btn.active:hover {
+  background: #2d5da1;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+  transform: rotate(-1deg);
+}
+
+/* Save button */
+.save-button {
+  margin-top: auto;
+  padding: 14px 20px;
+  background: #2d5da1;
+  color: #ffffff;
+  border: 3px solid #2d2d2d;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 4px 4px 0px 0px #2d2d2d;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Kalam', cursive;
+  cursor: pointer;
+  transition: all 0.1s;
+  transform: rotate(0.5deg);
+}
+
+.save-button:hover {
+  background: #1e4a85;
+  box-shadow: 2px 2px 0px 0px #2d2d2d;
+  transform: rotate(-0.5deg) translate(2px, 2px);
+}
+
+.save-button:active {
+  box-shadow: none;
+  transform: rotate(0deg) translate(4px, 4px);
 }
