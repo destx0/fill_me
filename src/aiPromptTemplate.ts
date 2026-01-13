@@ -69,6 +69,8 @@ Given an HTML form structure, generate a JavaScript code block that, when execut
 - After filling all fields, add a final delay and trigger a form validation check if possible.
 - IMPORTANT: Do NOT submit the form, click submit buttons, or trigger form submission events.
 - Do NOT include any comments, HTML, Markdown, or extra text. Output ONLY the raw JavaScript code, ready to execute.
+- VARIABLE DECLARATIONS: Use 'var' instead of 'let' or 'const' for all variable declarations to avoid temporal dead zone issues. Alternatively, declare all variables at the top of the code block before using them.
+- AVOID VARIABLE NAMING CONFLICTS: Use descriptive, unique variable names (e.g., 'inputField', 'selectElement', 'formField') instead of short names like 'i', 'e', 'ig', 'el' to prevent naming collisions.
 
 USER PORTFOLIO INFORMATION:
 ${userPortfolioInfo}

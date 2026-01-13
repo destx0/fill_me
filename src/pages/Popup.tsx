@@ -76,8 +76,7 @@ export default function () {
 				throw new Error("No active tab found");
 			}
 
-			// Step 1: Analyze Form
-			setStatus("🔍 Analyzing form...");
+			setStatus("Analyzing form...");
 			const analyzeResponse = await browser.tabs.sendMessage(tab.id, {
 				action: "analyzeForm",
 			});
@@ -86,17 +85,16 @@ export default function () {
 				throw new Error("No form elements found on this page");
 			}
 
-			console.log("✅ [POPUP] Form analyzed:", analyzeResponse);
+			console.log("[POPUP] Form analyzed:", analyzeResponse);
 
-			// Step 2: Send user details to content script and fill form
-			setStatus("🤖 Generating and applying form data...");
+			setStatus("Generating and applying form data...");
 			const fillResponse = await browser.tabs.sendMessage(tab.id, {
 				action: "fillForm",
 				userDetails: userDetails,
 			});
 
 			if (fillResponse && fillResponse.success) {
-				setStatus("✅ Form filled successfully!");
+				setStatus("Form filled successfully!");
 				console.log("Form filling successful:", fillResponse);
 			} else {
 				throw new Error(
@@ -123,14 +121,6 @@ export default function () {
 
 	return (
 		<div className="popup-container">
-			<div className="popup-header">
-				<img
-					src="/icon/512.png"
-					alt="Form Bot"
-					className="popup-icon"
-				/>
-			</div>
-
 			<textarea
 				className="user-details-input"
 				value={userDetails.personalInfo}
@@ -144,7 +134,7 @@ export default function () {
 				disabled={isProcessing}
 				className="fill-form-button"
 			>
-				{isProcessing ? "Processing..." : "🚀 AUTO FILL FORM"}
+				{isProcessing ? "Filling..." : "Fill"}
 			</button>
 
 			{status && <div className="status-message">{status}</div>}

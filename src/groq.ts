@@ -1,24 +1,3 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// Removed @ai-sdk/groq due to bundling issues with browser extensions
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-	storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-	messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-	appId: import.meta.env.VITE_FIREBASE_APP_ID,
-	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
 // Groq API key
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -32,10 +11,10 @@ export async function generateAIText(prompt: string): Promise<string> {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"Authorization": `Bearer ${GROQ_API_KEY}`,
+				Authorization: `Bearer ${GROQ_API_KEY}`,
 			},
 			body: JSON.stringify({
-				model: "openai/gpt-oss-120b",
+				model: "llama-3.3-70b-versatile",
 				messages: [
 					{
 						role: "user",
@@ -68,5 +47,3 @@ export async function generateAIText(prompt: string): Promise<string> {
 		throw error;
 	}
 }
-
-export { app, analytics };

@@ -103,7 +103,7 @@ async function askGroqAPI(userDetails?: any): Promise<{
 			};
 		}
 
-		const { generateAIText } = await import("./firebase");
+		const { generateAIText } = await import("./groq");
 
 		// Use provided user details or fallback to default
 		const portfolioInfo =

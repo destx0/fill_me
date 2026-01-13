@@ -23,10 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+*.zip
 # Config files
 .webextrc
 .webextrc.*
-
 # Environment variables
 .env
 .env.local

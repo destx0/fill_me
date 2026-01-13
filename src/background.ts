@@ -28,15 +28,20 @@ browser.runtime.onMessage.addListener(
 				}
 
 				// Execute the code in the page context using tabs.executeScript (Manifest V2)
+				// Wrap in async IIFE to support any async operations in generated code
 				await browser.tabs.executeScript(tab.id, {
 					code: `
-						(function() {
+						(async function() {
 							console.log("🚀 [PAGE CONTEXT] Executing form filling code...");
 							try {
-								${message.code}
+								// Wrap generated code in its own scope to avoid variable conflicts
+								await (async function executeGeneratedCode() {
+									${message.code}
+								})();
 								console.log("✅ [PAGE CONTEXT] Code executed successfully!");
 							} catch (error) {
-								console.error("❌ [PAGE CONTEXT] Code execution failed:", error);
+								console.error("❌ [PAGE CONTEXT] Code execution failed:", error.message);
+								console.error("❌ [PAGE CONTEXT] Error stack:", error.stack);
 								throw error;
 							}
 						})();
