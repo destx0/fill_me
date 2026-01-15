@@ -56,6 +56,15 @@ export default function () {
 		loadData();
 	}, []);
 
+	// Auto-save when userDetails or settings change
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			saveData();
+		}, 500); // Debounce saves by 500ms
+
+		return () => clearTimeout(timeoutId);
+	}, [userDetails, settings]);
+
 	const loadData = async () => {
 		try {
 			const stored = await browser.storage.local.get(["userDetails", "settings"]);
