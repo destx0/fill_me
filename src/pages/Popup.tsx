@@ -7,16 +7,28 @@ interface UserDetails {
 }
 
 interface Settings {
+	provider: "cerebras" | "groq";
 	apiKey: string;
 	model: string;
 	customModel: string;
 }
 
-const MODELS = [
-	{ id: "openai/gpt-oss-120b", name: "GPT OSS 120B" },
-	{ id: "meta-llama/llama-4-maverick-17b-128e-instruct", name: "Llama 4 Maverick" },
-	{ id: "custom", name: "Custom" },
-];
+const PROVIDERS = [
+	{ id: "cerebras", name: "Cerebras" },
+	{ id: "groq", name: "Groq" },
+] as const;
+
+const MODELS = {
+	cerebras: [
+		{ id: "zai-glm-4.7", name: "Z.ai GLM 4.7" },
+		{ id: "custom", name: "Custom" },
+	],
+	groq: [
+		{ id: "openai/gpt-oss-120b", name: "GPT OSS 120B" },
+		{ id: "meta-llama/llama-4-maverick-17b-128e-instruct", name: "Llama 4 Maverick" },
+		{ id: "custom", name: "Custom" },
+	],
+};
 
 const defaultUserDetails: UserDetails = {
 	personalInfo: `Full Name: Rahul Sharma
@@ -39,8 +51,9 @@ Years of Experience: 5 years
 };
 
 const defaultSettings: Settings = {
+	provider: "cerebras",
 	apiKey: "",
-	model: "openai/gpt-oss-120b",
+	model: "zai-glm-4.7",
 	customModel: "",
 };
 
@@ -72,7 +85,15 @@ export default function () {
 				setUserDetails(stored.userDetails);
 			}
 			if (stored.settings) {
-				setSettings({ ...defaultSettings, ...stored.settings });
+				const storedSettings = stored.settings as Partial<Settings>;
+				const provider = storedSettings.provider || (
+					storedSettings.model === "openai/gpt-oss-120b" ||
+					storedSettings.model === "meta-llama/llama-4-maverick-17b-128e-instruct"
+						? "groq"
+						: defaultSettings.provider
+				);
+
+				setSettings({ ...defaultSettings, ...storedSettings, provider });
 			}
 		} catch (error) {
 			console.error("Failed to load data:", error);
@@ -93,7 +114,7 @@ export default function () {
 
 	const fillFormWithAI = async () => {
 		if (!settings.apiKey) {
-			setError("Please add your Groq API key in settings");
+			setError(`Please add your ${getProviderName(settings.provider)} API key in settings`);
 			setShowSettings(true);
 			return;
 		}
@@ -164,20 +185,40 @@ export default function () {
 			{showSettings ? (
 				<div className="settings-panel">
 					<div className="settings-section">
-						<label className="input-label">Groq API Key</label>
+						<label className="input-label">Provider</label>
+						<div className="model-buttons">
+							{PROVIDERS.map((p) => (
+								<button
+									key={p.id}
+									className={`model-btn ${settings.provider === p.id ? "active" : ""}`}
+									onClick={() => setSettings({
+										...settings,
+										provider: p.id,
+										model: MODELS[p.id][0].id,
+										customModel: "",
+									})}
+								>
+									{p.name}
+								</button>
+							))}
+						</div>
+					</div>
+
+					<div className="settings-section">
+						<label className="input-label">{getProviderName(settings.provider)} API Key</label>
 						<input
 							type="password"
 							className="text-input"
 							value={settings.apiKey}
 							onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-							placeholder="gsk_..."
+							placeholder={settings.provider === "cerebras" ? "csk_..." : "gsk_..."}
 						/>
 					</div>
 
 					<div className="settings-section">
 						<label className="input-label">Model</label>
 						<div className="model-buttons">
-							{MODELS.map((m) => (
+							{MODELS[settings.provider].map((m) => (
 								<button
 									key={m.id}
 									className={`model-btn ${settings.model === m.id ? "active" : ""}`}
@@ -225,4 +266,8 @@ export default function () {
 			{error && <div className="error-message">{error}</div>}
 		</div>
 	);
+}
+
+function getProviderName(provider: Settings["provider"]) {
+	return provider === "cerebras" ? "Cerebras" : "Groq";
 }

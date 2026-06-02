@@ -50,8 +50,8 @@ browser.runtime.onMessage.addListener(
 			sendResponse(result);
 			return true;
 		} else if (message.action === "testGeminiAPI") {
-			console.log("🧪 [TEST] Testing Groq API...");
-			askGroqAPI()
+			console.log("[TEST] Testing AI provider...");
+			askProviderAPI()
 				.then((result) => sendResponse(result))
 				.catch((error) =>
 					sendResponse({
@@ -86,7 +86,7 @@ browser.runtime.onMessage.addListener(
 
 console.log("🚀 Form Bot content script loaded");
 
-async function askGroqAPI(userDetails?: any, settings?: any): Promise<{
+async function askProviderAPI(userDetails?: any, settings?: any): Promise<{
 	success: boolean;
 	reply?: string;
 	error?: string;
@@ -100,13 +100,13 @@ async function askGroqAPI(userDetails?: any, settings?: any): Promise<{
 		}
 
 		if (!settings?.apiKey) {
+			const providerName = getProviderName(settings?.provider);
+
 			return {
 				success: false,
-				error: "No API key provided. Please add your Groq API key in settings.",
+				error: `No API key provided. Please add your ${providerName} API key in settings.`,
 			};
 		}
-
-		const { generateAIText } = await import("./groq");
 
 		const portfolioInfo =
 			userDetails && userDetails.personalInfo
@@ -118,7 +118,12 @@ async function askGroqAPI(userDetails?: any, settings?: any): Promise<{
 			formHtml: analyzedFormHtml,
 		});
 
-		console.log("[GROQ] Sending request...");
+		const provider = settings.provider === "groq" ? "groq" : "cerebras";
+		const { generateAIText } = provider === "groq"
+			? await import("./groq")
+			: await import("./cerebras");
+
+		console.log(`[${getProviderName(provider).toUpperCase()}] Sending request...`);
 		const text = await generateAIText(prompt, settings.apiKey, settings.model);
 
 		return {
@@ -126,7 +131,7 @@ async function askGroqAPI(userDetails?: any, settings?: any): Promise<{
 			reply: text,
 		};
 	} catch (error) {
-		console.error("[GROQ] API failed:", error);
+		console.error("[AI PROVIDER] API failed:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
@@ -150,16 +155,16 @@ async function fillFormWithAI(userDetails?: any, settings?: any): Promise<{
 			};
 		}
 
-		const groqResult = await askGroqAPI(userDetails, settings);
+		const aiResult = await askProviderAPI(userDetails, settings);
 
-		if (!groqResult.success || !groqResult.reply) {
+		if (!aiResult.success || !aiResult.reply) {
 			return {
 				success: false,
-				error: "Failed to generate form filling code: " + (groqResult.error || "Unknown error"),
+				error: "Failed to generate form filling code: " + (aiResult.error || "Unknown error"),
 			};
 		}
 
-		const generatedCode = groqResult.reply;
+		const generatedCode = aiResult.reply;
 		console.log("[GENERATED CODE]", generatedCode);
 
 		try {
@@ -199,4 +204,8 @@ async function fillFormWithAI(userDetails?: any, settings?: any): Promise<{
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
 	}
+}
+
+function getProviderName(provider?: string) {
+	return provider === "groq" ? "Groq" : "Cerebras";
 }
