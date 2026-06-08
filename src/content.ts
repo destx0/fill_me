@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import { cleanFormHtml, selectBestForm } from "./htmlCleaner";
 import { generateFormFillPrompt, generateValidationFillPrompt } from "./aiPromptTemplate";
 import Popup from "./pages/Popup";
+import type { FillProgressEvent } from "./pages/popupTypes";
 import popupStyles from "./pages/Popup.css?inline";
 
 // Global variable to store the analyzed form HTML
@@ -15,12 +16,6 @@ let sidebarRoot: ReactDOM.Root | null = null;
 const SIDEBAR_ID = "form-bot-sidebar-host";
 const SIDEBAR_WIDTH = 360;
 const VALIDATION_WAIT_MS = 900;
-
-interface FillProgressEvent {
-	type: "info" | "success" | "warning" | "error";
-	message: string;
-	details?: string[];
-}
 
 // Listen for messages from the popup
 browser.runtime.onMessage.addListener(
@@ -97,9 +92,9 @@ function showSidebar() {
 		"max-width: 100vw",
 		"height: 100vh",
 		"z-index: 2147483647",
-		"background: #111827",
-		"box-shadow: -24px 0 60px rgba(0, 0, 0, 0.38)",
-		"border-left: 1px solid rgba(148, 163, 184, 0.22)",
+		"background: #000000",
+		"box-shadow: -18px 0 42px rgba(0, 0, 0, 0.34)",
+		"border-left: 1px solid #121212",
 		"transform: translateX(0)",
 		"transition: transform 180ms ease",
 		"contain: layout style paint",
@@ -119,7 +114,7 @@ function showSidebar() {
 		.form-bot-shell {
 			width: 100%;
 			height: 100%;
-			background: #111827;
+			background: #000000;
 		}
 
 		.form-bot-close {
@@ -129,10 +124,10 @@ function showSidebar() {
 			z-index: 2;
 			width: 32px;
 			height: 32px;
-			border: 1px solid rgba(148, 163, 184, 0.3);
-			border-radius: 8px;
-			background: rgba(15, 23, 42, 0.86);
-			color: rgb(226, 232, 240);
+			border: 1px solid #454545;
+			border-radius: 10px;
+			background: #1c1c1c;
+			color: #e8e3da;
 			font: 700 20px/1 system-ui, sans-serif;
 			cursor: pointer;
 		}

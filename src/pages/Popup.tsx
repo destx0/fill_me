@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import browser from "webextension-polyfill";
-
-interface UserDetails {
-	personalInfo: string;
-}
-
-interface Settings {
-	provider: "cerebras" | "groq";
-	apiKey: string;
-	model: string;
-	customModel: string;
-}
+import { ActivityPanel } from "../components/ActivityPanel";
+import { ProfilePanel } from "../components/ProfilePanel";
+import { getProviderName, SidebarHeader } from "../components/SidebarHeader";
+import { SettingsPanel } from "../components/SettingsPanel";
+import { ActivityStep, FillProgressEvent, Settings, UserDetails } from "./popupTypes";
 
 interface PopupProps {
 	analyzeForm?: () => Promise<any>;
@@ -19,16 +13,6 @@ interface PopupProps {
 		settings: Settings,
 		onProgress?: (event: FillProgressEvent) => void
 	) => Promise<any>;
-}
-
-interface FillProgressEvent {
-	type: "info" | "success" | "warning" | "error";
-	message: string;
-	details?: string[];
-}
-
-interface ActivityStep extends FillProgressEvent {
-	id: number;
 }
 
 const PROVIDERS = [
@@ -270,37 +254,11 @@ export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 
 	return (
 		<div className="popup-container">
-			<header className="sidebar-rail">
-				<div className="brand-block">
-					<div className="brand-mark">FB</div>
-					<div>
-						<p className="eyebrow">Form Bot</p>
-						<h1>AI autofill</h1>
-					</div>
-				</div>
-
-				<nav className="sidebar-nav" aria-label="Panel sections">
-					<button
-						className={`nav-button ${!showSettings ? "active" : ""}`}
-						onClick={() => setShowSettings(false)}
-					>
-						<span className="nav-icon" aria-hidden="true">F</span>
-						Profile
-					</button>
-					<button
-						className={`nav-button ${showSettings ? "active" : ""}`}
-						onClick={() => setShowSettings(true)}
-					>
-						<span className="nav-icon" aria-hidden="true">S</span>
-						Settings
-					</button>
-				</nav>
-
-				<div className="provider-card">
-					<span className="provider-dot" />
-					<span>{getProviderName(settings.provider)}</span>
-				</div>
-			</header>
+			<SidebarHeader
+				activeView={showSettings ? "settings" : "profile"}
+				providerName={getProviderName(settings.provider)}
+				onSelectView={(view) => setShowSettings(view === "settings")}
+			/>
 
 			<main className="workspace-panel">
 				<header className="workspace-header">
@@ -311,81 +269,29 @@ export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 					<div className="save-state">Auto-save on</div>
 				</header>
 
-				{showSettings ? (
-					<div className="settings-panel">
-						<div className="settings-section">
-							<label className="input-label">Provider</label>
-							<div className="model-buttons">
-								{PROVIDERS.map((p) => (
-									<button
-										key={p.id}
-										className={`model-btn ${settings.provider === p.id ? "active" : ""}`}
-										onClick={() => setSettings({
-											...settings,
-											provider: p.id,
-											model: MODELS[p.id][0].id,
-											customModel: "",
-										})}
-									>
-										{p.name}
-									</button>
-								))}
-							</div>
-						</div>
-
-						<div className="settings-section">
-							<label className="input-label">{getProviderName(settings.provider)} API Key</label>
-							<input
-								type="password"
-								className="text-input"
-								value={settings.apiKey}
-								onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-								placeholder={settings.provider === "cerebras" ? "csk_..." : "gsk_..."}
-							/>
-						</div>
-
-						<div className="settings-section">
-							<label className="input-label">Model</label>
-							<div className="model-buttons">
-								{MODELS[settings.provider].map((m) => (
-									<button
-										key={m.id}
-										className={`model-btn ${settings.model === m.id ? "active" : ""}`}
-										onClick={() => setSettings({ ...settings, model: m.id })}
-									>
-										{m.name}
-									</button>
-								))}
-							</div>
-							{settings.model === "custom" && (
-								<input
-									type="text"
-									className="text-input"
-									value={settings.customModel}
-									onChange={(e) => setSettings({ ...settings, customModel: e.target.value })}
-									placeholder="Enter model name..."
-								/>
-							)}
-						</div>
-
-						<button className="save-button" onClick={saveData}>
-							Save settings
-						</button>
-					</div>
-				) : (
-					<textarea
-						className="user-details-input"
-						value={userDetails.personalInfo}
-						onChange={(e) => setUserDetails({ personalInfo: e.target.value })}
-						placeholder="Enter your personal and professional information here..."
+				{(isProcessing || activitySteps.length > 0 || status || error) && (
+					<ActivityPanel
+						currentState={status || error || "Ready for next run"}
 					/>
 				)}
 
-				{status && <div className="status-message">{status}</div>}
-				{error && <div className="error-message">{error}</div>}
-				{(isProcessing || activitySteps.length > 0) && (
-					<ActivityPanel steps={activitySteps} isProcessing={isProcessing} />
+				{showSettings ? (
+					<SettingsPanel
+						providers={PROVIDERS}
+						models={MODELS}
+						settings={settings}
+						onChange={setSettings}
+						onSave={saveData}
+						getProviderName={getProviderName}
+					/>
+				) : (
+					<ProfilePanel
+						userDetails={userDetails}
+						onChange={setUserDetails}
+					/>
 				)}
+
+				{error && <div className="error-message">{error}</div>}
 
 				<button
 					onClick={fillFormWithAI}
@@ -395,69 +301,6 @@ export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 					{isProcessing ? "Filling..." : "Fill form"}
 				</button>
 			</main>
-		</div>
-	);
-}
-
-function getProviderName(provider: Settings["provider"]) {
-	return provider === "cerebras" ? "Cerebras" : "Groq";
-}
-
-function ActivityPanel({
-	steps,
-	isProcessing,
-}: {
-	steps: ActivityStep[];
-	isProcessing: boolean;
-}) {
-	return (
-		<section className="activity-panel" aria-live="polite">
-			<div className="activity-header">
-				<div>
-					<p className="eyebrow">Run status</p>
-					<strong>{isProcessing ? "Working" : "Latest run"}</strong>
-				</div>
-				{isProcessing && <GooeyLoader />}
-			</div>
-			<div className="activity-list">
-				{steps.slice(-7).map((step) => (
-					<div className={`activity-step ${step.type}`} key={step.id}>
-						<span className="activity-dot" />
-						<div>
-							<p>{step.message}</p>
-							{step.details && step.details.length > 0 && (
-								<ul>
-									{step.details.slice(0, 5).map((detail) => (
-										<li key={detail}>{detail}</li>
-									))}
-								</ul>
-							)}
-						</div>
-					</div>
-				))}
-			</div>
-		</section>
-	);
-}
-
-function GooeyLoader() {
-	return (
-		<div className="gooey-loader-wrap" role="status" aria-label="Loading">
-			<svg className="gooey-loader-svg" aria-hidden="true">
-				<defs>
-					<filter id="form-bot-gooey-loader-filter">
-						<feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-						<feColorMatrix
-							in="blur"
-							mode="matrix"
-							values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 42 -7"
-							result="goo"
-						/>
-						<feComposite in="SourceGraphic" in2="goo" operator="atop" />
-					</filter>
-				</defs>
-			</svg>
-			<div className="gooey-loader" />
 		</div>
 	);
 }
