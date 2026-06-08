@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./Popup.css";
 import browser from "webextension-polyfill";
 
 interface UserDetails {
@@ -11,6 +10,25 @@ interface Settings {
 	apiKey: string;
 	model: string;
 	customModel: string;
+}
+
+interface PopupProps {
+	analyzeForm?: () => Promise<any>;
+	fillForm?: (
+		userDetails: UserDetails,
+		settings: Settings,
+		onProgress?: (event: FillProgressEvent) => void
+	) => Promise<any>;
+}
+
+interface FillProgressEvent {
+	type: "info" | "success" | "warning" | "error";
+	message: string;
+	details?: string[];
+}
+
+interface ActivityStep extends FillProgressEvent {
+	id: number;
 }
 
 const PROVIDERS = [
@@ -58,13 +76,14 @@ const defaultSettings: Settings = {
 	customModel: "",
 };
 
-export default function () {
+export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [status, setStatus] = useState<string>("");
 	const [userDetails, setUserDetails] = useState<UserDetails>(defaultUserDetails);
 	const [settings, setSettings] = useState<Settings>(defaultSettings);
 	const [showSettings, setShowSettings] = useState(false);
+	const [activitySteps, setActivitySteps] = useState<ActivityStep[]>([]);
 
 	useEffect(() => {
 		loadData();
@@ -120,6 +139,59 @@ export default function () {
 		return settings.model === "custom" ? settings.customModel : settings.model;
 	};
 
+	const sendAnalyzeFormMessage = async () => {
+		if (analyzeForm) {
+			return analyzeForm();
+		}
+
+		const [tab] = await browser.tabs.query({
+			active: true,
+			currentWindow: true,
+		});
+
+		if (!tab.id) {
+			throw new Error("No active tab found");
+		}
+
+		return browser.tabs.sendMessage(tab.id, {
+			action: "analyzeForm",
+		});
+	};
+
+	const sendFillFormMessage = async () => {
+		if (fillForm) {
+			return fillForm(
+				userDetails,
+				{ ...settings, model: getActiveModel() },
+				(event) => {
+					setActivitySteps((steps) => [
+						...steps,
+						{
+							id: Date.now() + steps.length,
+							...event,
+						},
+					]);
+					setStatus(event.message);
+				}
+			);
+		}
+
+		const [tab] = await browser.tabs.query({
+			active: true,
+			currentWindow: true,
+		});
+
+		if (!tab.id) {
+			throw new Error("No active tab found");
+		}
+
+		return browser.tabs.sendMessage(tab.id, {
+			action: "fillForm",
+			userDetails: userDetails,
+			settings: { ...settings, model: getActiveModel() },
+		});
+	};
+
 	const fillFormWithAI = async () => {
 		if (!settings.apiKey) {
 			setError(`Please add your ${getProviderName(settings.provider)} API key in settings`);
@@ -136,43 +208,60 @@ export default function () {
 		setIsProcessing(true);
 		setError(null);
 		setStatus("");
+		setActivitySteps([
+			{
+				id: Date.now(),
+				type: "info",
+				message: "Starting form fill...",
+			},
+		]);
 
 		await saveData();
 
 		try {
-			const [tab] = await browser.tabs.query({
-				active: true,
-				currentWindow: true,
-			});
-
-			if (!tab.id) {
-				throw new Error("No active tab found");
-			}
-
 			setStatus("Analyzing form...");
-			const analyzeResponse = await browser.tabs.sendMessage(tab.id, {
-				action: "analyzeForm",
-			});
+			setActivitySteps((steps) => [
+				...steps,
+				{
+					id: Date.now() + steps.length,
+					type: "info",
+					message: "Analyzing visible form fields...",
+				},
+			]);
+			const analyzeResponse = await sendAnalyzeFormMessage();
 
 			if (!analyzeResponse) {
 				throw new Error("No form elements found on this page");
 			}
 
 			setStatus("Generating and applying form data...");
-			const fillResponse = await browser.tabs.sendMessage(tab.id, {
-				action: "fillForm",
-				userDetails: userDetails,
-				settings: { ...settings, model: getActiveModel() },
-			});
+			const fillResponse = await sendFillFormMessage();
 
 			if (fillResponse && fillResponse.success) {
-				setStatus("Form filled successfully!");
+				setStatus(fillResponse.message || "Form filled successfully!");
+				setActivitySteps((steps) => [
+					...steps,
+					{
+						id: Date.now() + steps.length,
+						type: "success",
+						message: fillResponse.message || "Form filled successfully!",
+					},
+				]);
 			} else {
 				throw new Error(fillResponse?.error || "Failed to fill form with AI.");
 			}
 		} catch (err) {
 			console.error("Form filling failed:", err);
-			setError(err instanceof Error ? err.message : "Failed to fill form.");
+			const errorMessage = err instanceof Error ? err.message : "Failed to fill form.";
+			setError(errorMessage);
+			setActivitySteps((steps) => [
+				...steps,
+				{
+					id: Date.now() + steps.length,
+					type: "error",
+					message: errorMessage,
+				},
+			]);
 			setStatus("");
 		} finally {
 			setIsProcessing(false);
@@ -181,101 +270,194 @@ export default function () {
 
 	return (
 		<div className="popup-container">
-			<div className="header-row">
-				<button
-					className="settings-toggle"
-					onClick={() => setShowSettings(!showSettings)}
-				>
-					{showSettings ? "Back" : "Settings"}
-				</button>
-			</div>
-
-			{showSettings ? (
-				<div className="settings-panel">
-					<div className="settings-section">
-						<label className="input-label">Provider</label>
-						<div className="model-buttons">
-							{PROVIDERS.map((p) => (
-								<button
-									key={p.id}
-									className={`model-btn ${settings.provider === p.id ? "active" : ""}`}
-									onClick={() => setSettings({
-										...settings,
-										provider: p.id,
-										model: MODELS[p.id][0].id,
-										customModel: "",
-									})}
-								>
-									{p.name}
-								</button>
-							))}
-						</div>
+			<header className="sidebar-rail">
+				<div className="brand-block">
+					<div className="brand-mark">FB</div>
+					<div>
+						<p className="eyebrow">Form Bot</p>
+						<h1>AI autofill</h1>
 					</div>
-
-					<div className="settings-section">
-						<label className="input-label">{getProviderName(settings.provider)} API Key</label>
-						<input
-							type="password"
-							className="text-input"
-							value={settings.apiKey}
-							onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-							placeholder={settings.provider === "cerebras" ? "csk_..." : "gsk_..."}
-						/>
-					</div>
-
-					<div className="settings-section">
-						<label className="input-label">Model</label>
-						<div className="model-buttons">
-							{MODELS[settings.provider].map((m) => (
-								<button
-									key={m.id}
-									className={`model-btn ${settings.model === m.id ? "active" : ""}`}
-									onClick={() => setSettings({ ...settings, model: m.id })}
-								>
-									{m.name}
-								</button>
-							))}
-						</div>
-						{settings.model === "custom" && (
-							<input
-								type="text"
-								className="text-input"
-								value={settings.customModel}
-								onChange={(e) => setSettings({ ...settings, customModel: e.target.value })}
-								placeholder="Enter model name..."
-							/>
-						)}
-					</div>
-
-					<button className="save-button" onClick={saveData}>
-						Save
-					</button>
 				</div>
-			) : (
-				<>
+
+				<nav className="sidebar-nav" aria-label="Panel sections">
+					<button
+						className={`nav-button ${!showSettings ? "active" : ""}`}
+						onClick={() => setShowSettings(false)}
+					>
+						<span className="nav-icon" aria-hidden="true">F</span>
+						Profile
+					</button>
+					<button
+						className={`nav-button ${showSettings ? "active" : ""}`}
+						onClick={() => setShowSettings(true)}
+					>
+						<span className="nav-icon" aria-hidden="true">S</span>
+						Settings
+					</button>
+				</nav>
+
+				<div className="provider-card">
+					<span className="provider-dot" />
+					<span>{getProviderName(settings.provider)}</span>
+				</div>
+			</header>
+
+			<main className="workspace-panel">
+				<header className="workspace-header">
+					<div>
+						<p className="eyebrow">{showSettings ? "Configuration" : "Reusable profile"}</p>
+						<h2>{showSettings ? "Model settings" : "Your form details"}</h2>
+					</div>
+					<div className="save-state">Auto-save on</div>
+				</header>
+
+				{showSettings ? (
+					<div className="settings-panel">
+						<div className="settings-section">
+							<label className="input-label">Provider</label>
+							<div className="model-buttons">
+								{PROVIDERS.map((p) => (
+									<button
+										key={p.id}
+										className={`model-btn ${settings.provider === p.id ? "active" : ""}`}
+										onClick={() => setSettings({
+											...settings,
+											provider: p.id,
+											model: MODELS[p.id][0].id,
+											customModel: "",
+										})}
+									>
+										{p.name}
+									</button>
+								))}
+							</div>
+						</div>
+
+						<div className="settings-section">
+							<label className="input-label">{getProviderName(settings.provider)} API Key</label>
+							<input
+								type="password"
+								className="text-input"
+								value={settings.apiKey}
+								onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
+								placeholder={settings.provider === "cerebras" ? "csk_..." : "gsk_..."}
+							/>
+						</div>
+
+						<div className="settings-section">
+							<label className="input-label">Model</label>
+							<div className="model-buttons">
+								{MODELS[settings.provider].map((m) => (
+									<button
+										key={m.id}
+										className={`model-btn ${settings.model === m.id ? "active" : ""}`}
+										onClick={() => setSettings({ ...settings, model: m.id })}
+									>
+										{m.name}
+									</button>
+								))}
+							</div>
+							{settings.model === "custom" && (
+								<input
+									type="text"
+									className="text-input"
+									value={settings.customModel}
+									onChange={(e) => setSettings({ ...settings, customModel: e.target.value })}
+									placeholder="Enter model name..."
+								/>
+							)}
+						</div>
+
+						<button className="save-button" onClick={saveData}>
+							Save settings
+						</button>
+					</div>
+				) : (
 					<textarea
 						className="user-details-input"
 						value={userDetails.personalInfo}
 						onChange={(e) => setUserDetails({ personalInfo: e.target.value })}
 						placeholder="Enter your personal and professional information here..."
 					/>
+				)}
 
-					<button
-						onClick={fillFormWithAI}
-						disabled={isProcessing}
-						className="fill-form-button"
-					>
-						{isProcessing ? "Filling..." : "Fill"}
-					</button>
-				</>
-			)}
+				{status && <div className="status-message">{status}</div>}
+				{error && <div className="error-message">{error}</div>}
+				{(isProcessing || activitySteps.length > 0) && (
+					<ActivityPanel steps={activitySteps} isProcessing={isProcessing} />
+				)}
 
-			{status && <div className="status-message">{status}</div>}
-			{error && <div className="error-message">{error}</div>}
+				<button
+					onClick={fillFormWithAI}
+					disabled={isProcessing}
+					className="fill-form-button"
+				>
+					{isProcessing ? "Filling..." : "Fill form"}
+				</button>
+			</main>
 		</div>
 	);
 }
 
 function getProviderName(provider: Settings["provider"]) {
 	return provider === "cerebras" ? "Cerebras" : "Groq";
+}
+
+function ActivityPanel({
+	steps,
+	isProcessing,
+}: {
+	steps: ActivityStep[];
+	isProcessing: boolean;
+}) {
+	return (
+		<section className="activity-panel" aria-live="polite">
+			<div className="activity-header">
+				<div>
+					<p className="eyebrow">Run status</p>
+					<strong>{isProcessing ? "Working" : "Latest run"}</strong>
+				</div>
+				{isProcessing && <GooeyLoader />}
+			</div>
+			<div className="activity-list">
+				{steps.slice(-7).map((step) => (
+					<div className={`activity-step ${step.type}`} key={step.id}>
+						<span className="activity-dot" />
+						<div>
+							<p>{step.message}</p>
+							{step.details && step.details.length > 0 && (
+								<ul>
+									{step.details.slice(0, 5).map((detail) => (
+										<li key={detail}>{detail}</li>
+									))}
+								</ul>
+							)}
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}
+
+function GooeyLoader() {
+	return (
+		<div className="gooey-loader-wrap" role="status" aria-label="Loading">
+			<svg className="gooey-loader-svg" aria-hidden="true">
+				<defs>
+					<filter id="form-bot-gooey-loader-filter">
+						<feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+						<feColorMatrix
+							in="blur"
+							mode="matrix"
+							values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 42 -7"
+							result="goo"
+						/>
+						<feComposite in="SourceGraphic" in2="goo" operator="atop" />
+					</filter>
+				</defs>
+			</svg>
+			<div className="gooey-loader" />
+		</div>
+	);
 }

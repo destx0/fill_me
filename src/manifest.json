@@ -10,9 +10,7 @@
     "96": "icon/96.png",
     "128": "icon/128.png"
   },
-  "browser_action": {
-    "default_popup": "src/popup.html"
-  },
+  "browser_action": {},
   "background": {
     "scripts": [
       "src/background.ts"

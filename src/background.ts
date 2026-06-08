@@ -6,6 +6,20 @@ browser.runtime.onInstalled.addListener((details) => {
 	console.log("Extension installed:", details);
 });
 
+browser.browserAction.onClicked.addListener(async (tab) => {
+	if (!tab.id) {
+		return;
+	}
+
+	try {
+		await browser.tabs.sendMessage(tab.id, {
+			action: "toggleFormBotSidebar",
+		});
+	} catch (error) {
+		console.error("Failed to toggle Form Bot sidebar:", error);
+	}
+});
+
 // Listen for messages from content script
 browser.runtime.onMessage.addListener(
 	async (message: any, sender: any, sendResponse: any) => {

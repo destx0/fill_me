@@ -10,6 +10,10 @@ export interface PromptVariables {
 	formHtml: string;
 }
 
+export interface ValidationPromptVariables extends PromptVariables {
+	missedFields: string;
+}
+
 /**
  * Generates a prompt for AI to create form-filling JavaScript code
  * @param variables - Object containing user portfolio info and form HTML
@@ -18,59 +22,22 @@ export interface PromptVariables {
 export function generateFormFillPrompt(variables: PromptVariables): string {
 	const { userPortfolioInfo, formHtml } = variables;
 
-	return `You are an expert assistant that generates JavaScript code to fill out HTML forms using provided user portfolio information.
-Given an HTML form structure, generate a JavaScript code block that, when executed in a browser, will:
-- Fill ALL input fields (text, email, number, password, date, tel, url), textareas, and select (dropdown) elements with plausible, diverse, and professional data derived from the user's portfolio.
-- SMART DATA FILLING: Use contextual intelligence to fill all fields even when exact data isn't in the portfolio:
-  1. Infer related information from available data (e.g., if location is provided, infer timezone, area code, etc.)
-  2. Generate realistic, professional data that's contextually appropriate
-  3. Make intelligent assumptions based on industry, role, education, or other provided context
-  4. Fill missing personal details with plausible alternatives that maintain consistency
-- NEVER SUBMIT THE FORM: Do not click submit buttons, form submission buttons, or trigger form submission events. Only fill the form fields.
-- CRITICAL: For each field, you must simulate real user interaction by:
-  1. First calling .focus() on the field to focus it
-  2. Then setting the value using .value = "your_value"
-  3. Then trigger these events IN ORDER: 'focus', 'input', 'change', 'blur'
-  4. Use dispatchEvent(new Event('eventName', { bubbles: true })) for proper event simulation
-  5. Example: field.focus(); field.value = "value"; field.dispatchEvent(new Event('input', {bubbles: true})); field.dispatchEvent(new Event('change', {bubbles: true})); field.dispatchEvent(new Event('blur', {bubbles: true}));
-- For radio buttons: Select the most relevant option, then trigger 'change' and 'click' events.
-- For checkboxes: Check relevant options using .checked = true, then trigger 'change' and 'click' events.
-- For dropdowns (select): Choose the option, set .value, then trigger 'change' event.
-- For COUNTRY selection dropdowns: Always select the main country name (e.g., "India" not territories, "United States" not territories, "United Kingdom" not dependencies). Look for the exact country name without territories, dependencies, or regions.
-- For DEPENDENT/CASCADING fields (state/province after country, city after state, etc.): 
-  1. Fill fields in the correct order and ensure selections are geographically consistent
-  2. After selecting a country, wait 500ms before selecting state: setTimeout(() => { /* state selection */ }, 500);
-  3. After selecting state, wait 500ms before selecting city: setTimeout(() => { /* city selection */ }, 500);
-  4. Always trigger 'change' event after each selection to load dependent options
-- For PHONE NUMBER inputs: Handle various phone input types including international phone inputs:
-  1. For standard phone inputs, focus the field, enter the full number with country code (e.g., +91 9876543210), then trigger events
-  2. For international phone libraries, look for country selector elements and phone number inputs
-  3. If there's a country dropdown, select the appropriate country first, trigger events, wait 300ms
-  4. Then focus the phone input field, clear it, enter the local phone number without country code, trigger events
-  5. For India: country code +91, local number 9876543210
-  6. For US: country code +1, local number 5551234567
-- VALIDATION HANDLING: 
-  1. Ensure all required fields (marked with required attribute or aria-required) are filled
-  2. For email fields, use proper email format: firstname.lastname@domain.com
-  3. For number fields, use valid numeric values within any specified min/max ranges
-  4. For date fields, use proper date format (YYYY-MM-DD or MM/DD/YYYY based on input type)
-- READONLY AND DISABLED FIELDS: Do NOT modify fields that are:
-  1. Marked with readonly attribute (readonly="true" or readonly)
-  2. Marked with disabled attribute (disabled="true" or disabled)
-  3. Have readOnly property set to true
-  4. Skip these fields entirely - do not focus, set values, or trigger events on them
-- Add appropriate delays between actions: setTimeout(() => { /* action */ }, 100-200);
-- SMART CONTEXTUAL FILLING: For all fields, use intelligent inference to fill data even when not explicitly provided:
-  1. Use contextual clues from existing portfolio information to generate related data
-  2. Maintain consistency across all fields (e.g., location-based phone numbers, appropriate time zones)
-  3. Generate professional, realistic data that increases chances of positive evaluation
-  4. Fill missing information with industry-appropriate defaults based on available context
-- Target fields using document.querySelector() or document.querySelectorAll() with id, name, or type attributes. Prefer id, then name, then type selectors.
-- After filling all fields, add a final delay and trigger a form validation check if possible.
-- IMPORTANT: Do NOT submit the form, click submit buttons, or trigger form submission events.
-- Do NOT include any comments, HTML, Markdown, or extra text. Output ONLY the raw JavaScript code, ready to execute.
-- VARIABLE DECLARATIONS: Use 'var' instead of 'let' or 'const' for all variable declarations to avoid temporal dead zone issues. Alternatively, declare all variables at the top of the code block before using them.
-- AVOID VARIABLE NAMING CONFLICTS: Use descriptive, unique variable names (e.g., 'inputField', 'selectElement', 'formField') instead of short names like 'i', 'e', 'ig', 'el' to prevent naming collisions.
+	return `Generate browser JavaScript to fill this form. Output ONLY raw JavaScript. No Markdown. No comments.
+
+Rules:
+- Fill every visible enabled input, textarea, select, required checkbox group, and required radio group.
+- Never submit the form. Never click submit buttons.
+- Skip disabled, readonly, hidden, file, image, submit, reset, and button inputs.
+- Prefer stable selectors: id, then name, then aria-label, then placeholder.
+- Use var only. Avoid let and const.
+- Keep code simple for a small model. Do not create large abstractions.
+- For each text-like field: focus it, set value, dispatch input, dispatch change, blur it.
+- For select fields: choose an existing non-empty option that best matches the profile, set value, dispatch input and change.
+- For checkbox/radio: set checked=true on the best option, dispatch click and change.
+- For email, phone, URL, number, date: use a valid value for that type.
+- If exact data is missing, infer a realistic professional value consistent with the profile.
+- Include a small helper function setValue(field, value) and reuse it.
+- At the end, run checkValidity on the form if available, but do not submit.
 
 USER PORTFOLIO INFORMATION:
 ${userPortfolioInfo}
@@ -79,4 +46,33 @@ FORM HTML:
 ${formHtml}
 
 Generate the JavaScript code now.`;
+}
+
+export function generateValidationFillPrompt(variables: ValidationPromptVariables): string {
+	const { userPortfolioInfo, formHtml, missedFields } = variables;
+
+	return `Generate a SMALL repair JavaScript script for missed form fields. Output ONLY raw JavaScript. No Markdown. No comments.
+
+Context:
+- The first fill pass already ran.
+- Only fix the missed fields listed below.
+- Never submit the form. Never click submit buttons.
+- Skip disabled, readonly, hidden, file, image, submit, reset, and button inputs.
+- Use var only. Avoid let and const.
+- Prefer id selectors, then name selectors, then aria-label or placeholder selectors.
+- For each text-like field: focus it, set value, dispatch input, dispatch change, blur it.
+- For select fields: choose an existing non-empty option that best matches the profile, set value, dispatch input and change.
+- For checkbox/radio groups: choose the most relevant visible enabled option and dispatch click/change.
+- Keep the script short and direct. Do not rewrite the full first-pass script.
+
+USER PORTFOLIO INFORMATION:
+${userPortfolioInfo}
+
+MISSED FIELDS TO FIX:
+${missedFields}
+
+FORM HTML:
+${formHtml}
+
+Generate the repair JavaScript now.`;
 }
