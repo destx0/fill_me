@@ -21,6 +21,7 @@ const PROVIDERS = [
 const MODELS = {
 	cerebras: [
 		{ id: "zai-glm-4.7", name: "Z.ai GLM 4.7" },
+		{ id: "gpt-oss-120b", name: "GPT OSS 120B" },
 		{ id: "custom", name: "Custom" },
 	],
 	groq: [
@@ -86,14 +87,21 @@ export default function () {
 			}
 			if (stored.settings) {
 				const storedSettings = stored.settings as Partial<Settings>;
+				const providerHasModel = (
+					provider: Settings["provider"],
+					model?: string
+				) => Boolean(model && MODELS[provider].some((m) => m.id === model));
 				const provider = storedSettings.provider || (
 					storedSettings.model === "openai/gpt-oss-120b" ||
 					storedSettings.model === "meta-llama/llama-4-maverick-17b-128e-instruct"
 						? "groq"
 						: defaultSettings.provider
 				);
+				const model = providerHasModel(provider, storedSettings.model)
+					? storedSettings.model ?? defaultSettings.model
+					: defaultSettings.model;
 
-				setSettings({ ...defaultSettings, ...storedSettings, provider });
+				setSettings({ ...defaultSettings, ...storedSettings, provider, model });
 			}
 		} catch (error) {
 			console.error("Failed to load data:", error);
