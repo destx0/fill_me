@@ -2,13 +2,11 @@ import { Settings } from "../pages/popupTypes";
 
 interface SidebarHeaderProps {
 	activeView: "profile" | "settings";
-	providerName: string;
 	onSelectView: (view: "profile" | "settings") => void;
 }
 
 export function SidebarHeader({
 	activeView,
-	providerName,
 	onSelectView,
 }: SidebarHeaderProps) {
 	return (
@@ -36,10 +34,6 @@ export function SidebarHeader({
 				</button>
 			</nav>
 
-			<div className="provider-card">
-				<span className="provider-dot" />
-				<span>{providerName}</span>
-			</div>
 		</header>
 	);
 }

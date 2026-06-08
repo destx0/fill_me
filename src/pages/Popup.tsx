@@ -256,24 +256,13 @@ export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 		<div className="popup-container">
 			<SidebarHeader
 				activeView={showSettings ? "settings" : "profile"}
-				providerName={getProviderName(settings.provider)}
 				onSelectView={(view) => setShowSettings(view === "settings")}
 			/>
 
 			<main className="workspace-panel">
 				<header className="workspace-header">
-					<div>
-						<p className="eyebrow">{showSettings ? "Configuration" : "Reusable profile"}</p>
-						<h2>{showSettings ? "Model settings" : "Your form details"}</h2>
-					</div>
-					<div className="save-state">Auto-save on</div>
+					<h2>{showSettings ? "Model settings" : "Your form details"}</h2>
 				</header>
-
-				{(isProcessing || activitySteps.length > 0 || status || error) && (
-					<ActivityPanel
-						currentState={status || error || "Ready for next run"}
-					/>
-				)}
 
 				{showSettings ? (
 					<SettingsPanel
@@ -292,6 +281,13 @@ export default function Popup({ analyzeForm, fillForm }: PopupProps = {}) {
 				)}
 
 				{error && <div className="error-message">{error}</div>}
+
+				{(isProcessing || activitySteps.length > 0 || status || error) && (
+					<ActivityPanel
+						currentState={status || error || "Ready for next run"}
+						isActive={isProcessing}
+					/>
+				)}
 
 				<button
 					onClick={fillFormWithAI}

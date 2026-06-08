@@ -3,14 +3,15 @@ import { ShiningText } from "./ShiningText";
 
 interface ActivityPanelProps {
 	currentState: string;
+	isActive: boolean;
 }
 
-export function ActivityPanel({ currentState }: ActivityPanelProps) {
+export function ActivityPanel({ currentState, isActive }: ActivityPanelProps) {
 	return (
-		<section className="activity-panel" aria-live="polite">
+		<section className={`activity-panel ${isActive ? "is-active" : "is-complete"}`} aria-live="polite">
 			<div className="activity-stage">
-				<GooeyLoader />
-				<ShiningText text={currentState || "Ready"} />
+				{isActive && <GooeyLoader />}
+				<ShiningText text={currentState || "Ready"} isActive={isActive} />
 			</div>
 		</section>
 	);
